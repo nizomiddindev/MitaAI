@@ -1,0 +1,37 @@
+{
+  "pluginVersion": "0.2.1",
+  "installationVerifiedAtUtc": "2026-10-05T10:41:14.5641380Z",
+  "buildSucceeded": true,
+  "buildWarnings": 0,
+  "buildErrors": 0,
+  "managedChecksPassed": 122,
+  "testBoundary": "Production composer, restoration, and lease code; Unity access stubbed in lease checks",
+  "installedPlugin": "D:\\MitaAI\\MiSide_Dev\\BepInEx\\plugins\\MitaAI\\MitaAI.Plugin.dll",
+  "sha256": "887E82BDF80F191B047BC474FE4BEE9A407DCD89B82242833DBE5FA32A8D2B60",
+  "installedBuildAndManifestMatch": true,
+  "originalGameFingerprintsUnchanged": true,
+  "pluginLoaded": true,
+  "mainThreadReady": true,
+  "menuSceneObserved": true,
+  "runtimeProbeErrorsObservedDuringStartup": false,
+  "markers": [
+    "MITAAI_PLUGIN_LOADED version=0.2.1 mode=text-input-fixed-reply input=native-keyboard",
+    "MITAAI_MAIN_THREAD_READY",
+    "MITAAI_SCENE name=SceneMenu"
+  ],
+  "resolvedFailure": "0.2.0 GUI.TextField called stripped GUIStateObjects.GetStateObject; removed that path",
+  "textInputImplemented": true,
+  "textInputGameplayVerified": false,
+  "inputRestorationGameplayVerified": false,
+  "gateG2Passed": false,
+  "nativeDialogueImplemented": false,
+  "aiConnected": false,
+  "pinkUiImplemented": false,
+  "knownRuntimeLimits": [
+    "Actual keyboard input, presentation, and controls need in-game verification",
+    "Other legacy-input consumers may see Escape or gameplay hotkeys while typing",
+    "Same-value Boolean writes cannot reveal external control ownership",
+    "Cutscene handover and recovery have not been verified",
+    "Minimal composer has no selection, mouse caret placement, or IME composition"
+  ]
+}

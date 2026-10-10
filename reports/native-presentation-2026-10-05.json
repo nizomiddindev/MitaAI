@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-05",
+  "pluginVersion": "0.4.2",
+  "status": "GAMEPLAY_NATIVE_UI_CREATED_REPLY_AND_VISUAL_TEST_PENDING",
+  "installedSha256": "658F870C264B0A8E8E6817D235F6C7771CAB4931003ACC1B84A255B2CAEB6878",
+  "buildWarnings": 0,
+  "buildErrors": 0,
+  "managedChecksPassed": 180,
+  "originalGameFingerprintsUnchanged": true,
+  "scene": "Scene 4 - StartSecret",
+  "nativeTemplate": "World/Quests/Quest 1/Game Aihastion/Dialogues/Fight/Dialogue Win 2/DMita 3",
+  "nativeFontName": "Font",
+  "promptSource": "GameController/Interface/Key Run",
+  "frameSource": "GameController/Interface/SubtitlesFrame",
+  "nativeUiCreatedInRuntime": true,
+  "eComposerOpenedInRuntime": false,
+  "pauseResumeCursorRecoveryLogged": false,
+  "replyActivationLogged": false,
+  "nativeReplyVisuallyVerified": false,
+  "referenceStyleVisuallyVerified": false,
+  "nativeStoryCoexistenceVerified": false,
+  "inputPromptAnimation": "mod-owned fade/slide",
+  "replyAnimation": "native Dialogue_3DText attempted; pending playback test",
+  "realAiConnected": false,
+  "previousVersionFailure": {
+    "version": "0.4.1",
+    "nativeUiCreatedInRuntime": true,
+    "replyActivationLogged": true,
+    "userSawNoReply": true,
+    "userRejectedStyle": true,
+    "userReportedCloseUpPromptDisappears": true,
+    "oldUnavailableScreenshotBelongsToVersion": "0.4.0"
+  },
+  "limitations": [
+    "Rounded backgrounds, palette and layout are mod-owned and reference-inspired; not exact native sprite clones.",
+    "Native Start/shared subtitle state/physics/cleanup need gameplay verification.",
+    "Managed tests do not exercise IL2CPP cloning, effects, native animation or keyboard rendering."
+  ]
+}

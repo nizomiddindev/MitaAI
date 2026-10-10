@@ -1,0 +1,44 @@
+{
+  "pluginVersion": "0.2.0",
+  "installationVerifiedAtUtc": "2026-10-05T10:33:59.8826497Z",
+  "buildSucceeded": true,
+  "buildWarnings": 0,
+  "buildErrors": 0,
+  "managedChecksPassed": 110,
+  "testBoundary": "Production composer, restoration, and lease code; Unity access stubbed in lease checks",
+  "installedPlugin": "D:\\MitaAI\\MiSide_Dev\\BepInEx\\plugins\\MitaAI\\MitaAI.Plugin.dll",
+  "sha256": "2FBF5DE18F447B4E7451C5A1218AFF3332C48BE307666CD0337DE28B4E85B9A2",
+  "installedBuildAndManifestMatch": true,
+  "originalGameFingerprintsUnchanged": true,
+  "pluginLoaded": true,
+  "mainThreadReady": true,
+  "menuSceneObserved": true,
+  "runtimeProbeErrorsObservedDuringStartup": false,
+  "markers": [
+    "MITAAI_PLUGIN_LOADED version=0.2.0 mode=text-input-fixed-reply",
+    "MITAAI_MAIN_THREAD_READY",
+    "MITAAI_SCENE name=SceneMenu"
+  ],
+  "textInputImplemented": true,
+  "textInputGameplayVerified": false,
+  "subsequentGameplayAttempt": {
+    "composerBindingOpened": true,
+    "playerHierarchy": "GameController/Player",
+    "cameraUnderPlayer": true,
+    "failed": true,
+    "exception": "System.NotSupportedException: Method unstripping failed at UnityEngine.GUIStateObjects.GetStateObject",
+    "userConfirmedFailure": true,
+    "supersededBy": "0.2.1 native keyboard composer"
+  },
+  "inputRestorationGameplayVerified": false,
+  "gateG2Passed": false,
+  "nativeDialogueImplemented": false,
+  "aiConnected": false,
+  "pinkUiImplemented": false,
+  "knownRuntimeLimits": [
+    "Player camera hierarchy and normal-gameplay guard still need in-game verification",
+    "Other legacy-input consumers may see Escape or gameplay hotkeys while typing",
+    "Same-value Boolean writes cannot reveal external control ownership",
+    "Cutscene handover and recovery have not been verified"
+  ]
+}

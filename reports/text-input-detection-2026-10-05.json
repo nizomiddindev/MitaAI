@@ -1,0 +1,42 @@
+{
+  "verifiedAtUtc": "2026-10-05T10:59:41.0505096Z",
+  "pluginVersion": "0.2.2",
+  "sha256": "554C428E3B427F21A947832FB75501B41EE04CDE4456BBDC02BB676A2A0BE049",
+  "buildSucceeded": true,
+  "buildWarnings": 0,
+  "buildErrors": 0,
+  "managedChecksPassed": 128,
+  "testBoundary": "Production composer, viewport-overlap, and lease code; Unity access stubbed for lease checks",
+  "installedBuildAndManifestMatch": true,
+  "originalGameFingerprintsUnchanged": true,
+  "pluginLoaded": true,
+  "mainThreadReady": true,
+  "menuSceneObserved": true,
+  "gameplayScene": "Scene 4 - StartSecret",
+  "playerHierarchy": "GameController/Player",
+  "cameraHierarchy": "GameController/Player/HeadPlayer/MainCamera",
+  "modelViewportOverlapObserved": true,
+  "submittedTurnsObserved": 2,
+  "captionRequestsObserved": 2,
+  "runtimeProbeErrorsObserved": false,
+  "userConfirmedTypingAndFixedReply": true,
+  "userObservation": "Typed hello and received the fixed hello / right here reply",
+  "subsequentInputSnapshot": {
+    "dontMove": false,
+    "stopMouseMove": false,
+    "interactionValue": 0,
+    "cursorLock": "Locked"
+  },
+  "movementAndCameraRestorationUserConfirmed": false,
+  "fullGateG2Passed": false,
+  "nativeDialogueImplemented": false,
+  "aiConnected": false,
+  "pinkUiImplemented": false,
+  "remainingChecks": [
+    "20-turn gameplay run and movement/look/interaction restoration",
+    "Escape and gameplay-hotkey coexistence",
+    "Focus loss, scene unload/reload, and disabled/busy player guards in-game",
+    "Controller OnDisable effects, physics drift, and scripted handover",
+    "Visibility is projected bounds overlap, not wall-occlusion detection"
+  ]
+}

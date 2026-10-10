@@ -1,0 +1,37 @@
+{
+  "installationVerifiedAtUtc": "2026-10-05T12:17:11.7790469Z",
+  "pluginVersion": "0.2.3",
+  "sha256": "859F3034555D610A985A4CDC07B5BB3D7C80897B0A3CD575617851CB136A4816",
+  "buildSucceeded": true,
+  "buildWarnings": 0,
+  "buildErrors": 0,
+  "managedChecksPassed": 139,
+  "testBoundary": "Production composer, viewport overlap, and lease code; native Unity boundary stubbed for lease checks",
+  "installedBuildAndManifestMatch": true,
+  "originalGameFingerprintsUnchanged": true,
+  "pluginLoaded": true,
+  "mainThreadReady": true,
+  "menuSceneObserved": true,
+  "startupProbeErrorsObserved": false,
+  "previousVersionFollowUp": {
+    "version": "0.2.2",
+    "userConfirmedMovementAfterSubmit": true,
+    "submittedTurnsObserved": 3,
+    "takeoverSnapshot": {
+      "timeScale": 0,
+      "playerEnabled": false,
+      "dontMove": false,
+      "stopMouseMove": false,
+      "interactionValue": 3,
+      "scriptedControl": false,
+      "cursor": "None"
+    },
+    "subsequentReopening": "Visible Mita and free player flags/interaction zero; cursor still None; locked-cursor guard rejected F8",
+    "exactPauseTriggerEstablished": false
+  },
+  "change": "Guarded same-player one-shot cursor recovery after normal gameplay resumes; scene/unload and game-owned cursor modes invalidate recovery",
+  "pauseResumeRecoveryGameplayVerified": false,
+  "fullGateG2Passed": false,
+  "aiConnected": false,
+  "pinkUiImplemented": false
+}

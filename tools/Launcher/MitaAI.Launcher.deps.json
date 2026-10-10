@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "MitaAI.Launcher/1.0.0": {
+        "runtime": {
+          "MitaAI.Launcher.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "MitaAI.Launcher/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

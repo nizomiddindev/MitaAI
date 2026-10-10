@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/MitaAI.Plugin/ComposerState.cs" Link="ComposerState.cs" />
+    <Compile Include="../../src/MitaAI.Plugin/PlayerInputLease.cs" Link="PlayerInputLease.cs" />
+    <Compile Include="../../src/MitaAI.Plugin/TargetVisibility.cs" Link="TargetVisibility.cs" />
+    <Compile Include="../../src/MitaAI.Plugin/NativeTemplatePolicy.cs" Link="NativeTemplatePolicy.cs" />
+    <Compile Include="../../src/MitaAI.Plugin/RoundedMask.cs" Link="RoundedMask.cs" />
+    <Compile Include="../../src/MitaAI.Plugin/SubtitleTurnState.cs" Link="SubtitleTurnState.cs" />
+    <Compile Include="../../src/MitaAI.Plugin/ScreenSubtitleState.cs" Link="ScreenSubtitleState.cs" />
+    <Compile Include="../../src/MitaAI.Plugin/AIProvider.cs" Link="AIProvider.cs" />
+    <Compile Include="../../src/MitaAI.Plugin/AIChatClient.cs" Link="AIChatClient.cs" />
+  </ItemGroup>
+</Project>

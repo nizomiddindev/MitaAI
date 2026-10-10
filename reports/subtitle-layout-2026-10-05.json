@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-05",
+  "pluginVersion": "0.4.5",
+  "sha256": "A2589F631F79562E56E914F3335EFF18026ED4B4E23D5A9301E1267534FE38D2",
+  "previousVisualResult": "0.4.4 draft visible but native submitted letters overlap at one point; font, prompt delay and close-up targeting rejected by user",
+  "build": { "warnings": 0, "errors": 0, "managedChecksPassed": 200 },
+  "installation": {
+    "userConfirmedNormalGameClosure": true,
+    "buildInstalledManifestHashesMatch": true,
+    "originalGameFingerprintsUnchanged": true,
+    "gameRelaunched": true
+  },
+  "changes": [
+    "Initialize native style, positive letter layout values and font glyph cache before activation.",
+    "Keep neutral owned active parent and native sounds data reference; audio/voice guards remain disabled.",
+    "Use native language-dependent font selector on mod-owned editable draft Text.",
+    "Allow E to interrupt only our own turn without full timeout wait; existing story/input/native interaction guards remain.",
+    "Extend aimed bounds to actual humanoid head envelope for close-up face coverage."
+  ],
+  "verification": {
+    "startup": "Process running, but title Select BepInEx suggests console-selection pause; new startup markers not yet observed. User asked to press Escape in console.",
+    "nativeGlyphSpacing": "Awaiting actual game test",
+    "fontMatch": "Awaiting screenshot; selected asset family will be logged",
+    "promptReopening": "Awaiting actual game test",
+    "closeUpAim": "Managed geometry checks passed; actual game test pending",
+    "nativeLifecycleErrors": "Earlier Start/Update null references unresolved until new submission log review",
+    "storyCoexistence": "Not verified"
+  },
+  "scope": { "fixedDiagnosticFixture": true, "liveAI": false, "voice": false, "persistentMemory": false }
+}

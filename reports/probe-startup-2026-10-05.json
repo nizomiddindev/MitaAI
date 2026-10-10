@@ -1,0 +1,25 @@
+{
+  "verifiedAtUtc": "2026-10-05T10:13:06.8568629Z",
+  "pluginVersion": "0.1.0",
+  "buildSucceeded": true,
+  "buildWarnings": 0,
+  "buildErrors": 0,
+  "installedPlugin": "D:\\MitaAI\\MiSide_Dev\\BepInEx\\plugins\\MitaAI\\MitaAI.Plugin.dll",
+  "sha256": "AF8C91CF0A20D759C331C982188D826489B053D5F8D6BD42B495C88268A26985",
+  "originalGameFingerprintsUnchanged": true,
+  "pluginLoaded": true,
+  "mainThreadReady": true,
+  "runtimeErrorsObserved": false,
+  "markers": [
+    "[Info   :   BepInEx] Loading [MitaAI Test Plugin 0.1.0]\r",
+    "[Info   :MitaAI Test Plugin] MITAAI_PLUGIN_LOADED version=0.1.0 mode=fixed-caption\r",
+    "[Info   :MitaAI Test Plugin] MITAAI_MAIN_THREAD_READY\r",
+    "[Info   :MitaAI Test Plugin] MITAAI_SCENE name=SceneAihasto\r",
+    "[Info   :MitaAI Test Plugin] MITAAI_SCENE name=SceneLoading\r",
+    "[Info   :MitaAI Test Plugin] MITAAI_SCENE name=SceneMenu\r"
+  ],
+  "captionVisualVerified": false,
+  "textInputImplemented": false,
+  "nativeDialogueImplemented": false,
+  "aiConnected": false
+}

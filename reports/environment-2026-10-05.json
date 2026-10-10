@@ -1,0 +1,1114 @@
+{
+  "schemaVersion": 1,
+  "inspectedAtUtc": "2026-10-05T09:08:17.0886334Z",
+  "status": "READY_FOR_LOADER_PROBE",
+  "game": {
+    "directory": "D:\\MitaAI\\MiSide_Dev",
+    "versionLabel": "VERSION 0.923",
+    "unityVersion": "2021.3.35f1",
+    "metadataVersion": 29,
+    "metadataTypeCount": 6262,
+    "architectures": {
+      "executable": "x64",
+      "unityPlayer": "x64",
+      "gameAssembly": "x64"
+    }
+  },
+  "fingerprints": {
+    "executable": {
+      "path": "D:\\MitaAI\\MiSide_Dev\\MiSideFull.exe",
+      "bytes": 884736,
+      "sha256": "d9466fe18c61973f973325962c6277358c032cc6c968749a5102a799ed0511a4"
+    },
+    "unityPlayer": {
+      "path": "D:\\MitaAI\\MiSide_Dev\\UnityPlayer.dll",
+      "bytes": 29465112,
+      "sha256": "1c5b91fccb8458999aedc4d83b5ab08b6a4c7251f2038c0a8a43d01a5ae1c6dd"
+    },
+    "gameAssembly": {
+      "path": "D:\\MitaAI\\MiSide_Dev\\GameAssembly.dll",
+      "bytes": 22352896,
+      "sha256": "969faf6ae367ce0fc12fe69da26cf1a5343c28674a7e026dca8513e6b8f2df2a"
+    },
+    "metadata": {
+      "path": "D:\\MitaAI\\MiSide_Dev\\MiSideFull_Data\\il2cpp_data\\Metadata\\global-metadata.dat",
+      "bytes": 5158524,
+      "sha256": "580ff55d83185a2f8bde97f3b14c192a994dad6f3f1ca1e5a9266ac2e1efa32a"
+    }
+  },
+  "installedDotnetSdks": [
+    "5.0.408 [C:\\Program Files\\dotnet\\sdk]",
+    "6.0.428 [C:\\Program Files\\dotnet\\sdk]",
+    "9.0.316 [C:\\Program Files\\dotnet\\sdk]",
+    "10.0.401 [C:\\Program Files\\dotnet\\sdk]"
+  ],
+  "loader": {
+    "bepinexCorePresent": false,
+    "bepinexGameInteropPresent": false,
+    "melonLoaderDirectoryPresent": false,
+    "winhttpProxyPresent": false
+  },
+  "types": {
+    "Character_Look": {
+      "namespace": "",
+      "fields": [
+        "mainTransform",
+        "active",
+        "activeBlink",
+        "timeOffBlink",
+        "animPerson",
+        "movePoints",
+        "movePointsBody",
+        "ikMain",
+        "boneHead",
+        "forwardPerson",
+        "spine",
+        "head",
+        "eyes",
+        "body",
+        "bodyYOffset",
+        "needBodyYOffset",
+        "wasBodyYOffset",
+        "timeNeedBodyYOffset",
+        "activeBodyIK",
+        "offLimitAngleLook",
+        "offTimeLookRandom",
+        "offIKHead",
+        "timeAnimationPivotLegsRotate",
+        "pivotLegsRotateWas",
+        "pivotLegsRotateNeed",
+        "rotateBodySide",
+        "positionRightLegStay",
+        "positionLeftLegStay",
+        "positionLegNeedLeft",
+        "positionLegNeedRight",
+        "rotationLegRotateRight",
+        "rotationLegRotateLeft",
+        "timeDontCanRotateBody",
+        "timeNowCanRotateBody",
+        "speedRotateBody",
+        "targetForRotateBody",
+        "rotateBodyExact",
+        "animationRotateBody",
+        "animationRotateBodyUpLegs",
+        "canRotateBody",
+        "pivotLegs",
+        "legRightBone",
+        "legLeftBone",
+        "stepLegs",
+        "timeAnimationNow",
+        "animationNod",
+        "typeNod",
+        "positionNod",
+        "animBlink",
+        "startPriorityPlayer",
+        "lookObjectEyes",
+        "timeLookObjectEyes",
+        "timeCheckEyes",
+        "eyesPositionRandom",
+        "timeBlink",
+        "timeBlinkM",
+        "randomLook",
+        "positionRandomLook",
+        "timeLookEyes",
+        "timeLookEyesMax",
+        "timeLookHead",
+        "timeLookHeadMax",
+        "speedLerpLookHead",
+        "speedLerpDivide",
+        "lookObject",
+        "dotLook",
+        "eventRotateBodyFinish",
+        "erbfReady",
+        "eventRotateBodyHalfFinish",
+        "erbhfReady",
+        "speedActivation",
+        "speedLook"
+      ],
+      "methods": [
+        {
+          "name": "Start",
+          "parameterCount": 0
+        },
+        {
+          "name": "Update",
+          "parameterCount": 0
+        },
+        {
+          "name": "LateUpdate",
+          "parameterCount": 0
+        },
+        {
+          "name": "OnEnable",
+          "parameterCount": 0
+        },
+        {
+          "name": "ReTimeLookEyes",
+          "parameterCount": 0
+        },
+        {
+          "name": "CheckLookForEyes",
+          "parameterCount": 0
+        },
+        {
+          "name": "ReTimeLookHead",
+          "parameterCount": 0
+        },
+        {
+          "name": "ReTimeBlink",
+          "parameterCount": 0
+        },
+        {
+          "name": "StartRotate",
+          "parameterCount": 1
+        },
+        {
+          "name": "StopRotate",
+          "parameterCount": 0
+        },
+        {
+          "name": "IKBodyEnable",
+          "parameterCount": 1
+        },
+        {
+          "name": "Nod",
+          "parameterCount": 1
+        },
+        {
+          "name": "LookOnObject",
+          "parameterCount": 1
+        },
+        {
+          "name": "LookOnObjectSmooth",
+          "parameterCount": 1
+        },
+        {
+          "name": "LookAndPriorityObject",
+          "parameterCount": 1
+        },
+        {
+          "name": "LookOnObjectAndRotate",
+          "parameterCount": 1
+        },
+        {
+          "name": "RotateOnTarget",
+          "parameterCount": 1
+        },
+        {
+          "name": "RotateOnTargetExact",
+          "parameterCount": 1
+        },
+        {
+          "name": "ForwardReTransform",
+          "parameterCount": 1
+        },
+        {
+          "name": "LookRandom",
+          "parameterCount": 0
+        },
+        {
+          "name": "EyesLookOnPlayer",
+          "parameterCount": 1
+        },
+        {
+          "name": "EyesLookOffsetRandom",
+          "parameterCount": 1
+        },
+        {
+          "name": "Blink",
+          "parameterCount": 0
+        },
+        {
+          "name": "OffsetBody",
+          "parameterCount": 1
+        },
+        {
+          "name": "InstantTargetLook",
+          "parameterCount": 1
+        },
+        {
+          "name": "LookOnPlayer",
+          "parameterCount": 0
+        },
+        {
+          "name": "LookOnPlayerAndRotate",
+          "parameterCount": 0
+        },
+        {
+          "name": "LookRotatePriorityOnPlayer",
+          "parameterCount": 0
+        },
+        {
+          "name": "PriorityLookOnPlayer",
+          "parameterCount": 0
+        },
+        {
+          "name": "PriorityLookAndOnPlayer",
+          "parameterCount": 0
+        },
+        {
+          "name": "FastDeactive",
+          "parameterCount": 0
+        },
+        {
+          "name": "Activation",
+          "parameterCount": 1
+        },
+        {
+          "name": "ActivationBlink",
+          "parameterCount": 1
+        },
+        {
+          "name": "ActivationRotateBody",
+          "parameterCount": 1
+        },
+        {
+          "name": "PriorityLook",
+          "parameterCount": 1
+        },
+        {
+          "name": "RandomTimeLookActivation",
+          "parameterCount": 1
+        },
+        {
+          "name": "ReSpeedActivation",
+          "parameterCount": 1
+        },
+        {
+          "name": "ReSpeedLook",
+          "parameterCount": 1
+        },
+        {
+          "name": "LimitAngleLookOff",
+          "parameterCount": 1
+        },
+        {
+          "name": ".ctor",
+          "parameterCount": 0
+        }
+      ]
+    },
+    "MitaPerson": {
+      "namespace": "",
+      "fields": [
+        "animMita",
+        "nma",
+        "lookLife",
+        "timeFaceLayer",
+        "indexTextureFaceLayer",
+        "indexTextureFaceLayerNow",
+        "colorFaceLayer",
+        "colorEmissionFaceLayer",
+        "faceLayer",
+        "meshHead",
+        "startLayerFace",
+        "boneRightItem",
+        "boneLeftItem",
+        "fixedRightItem",
+        "fixedLeftItem",
+        "magnetTarget",
+        "canRotate",
+        "animIdleAfter",
+        "targetMoveTo",
+        "eventFinish",
+        "eventFinishAddon",
+        "timeRotate",
+        "tTarget",
+        "nmaSpeed",
+        "distanceTargetMoveFinish",
+        "speedRotateLerp",
+        "faceEmotion",
+        "startEmotion"
+      ],
+      "methods": [
+        {
+          "name": "Start",
+          "parameterCount": 0
+        },
+        {
+          "name": "Update",
+          "parameterCount": 0
+        },
+        {
+          "name": "LateUpdate",
+          "parameterCount": 0
+        },
+        {
+          "name": "MagnetToTarget",
+          "parameterCount": 1
+        },
+        {
+          "name": "MagnetOff",
+          "parameterCount": 0
+        },
+        {
+          "name": "MitaTeleport",
+          "parameterCount": 1
+        },
+        {
+          "name": "AiWalkToTarget",
+          "parameterCount": 2
+        },
+        {
+          "name": "AiWalkToTarget",
+          "parameterCount": 3
+        },
+        {
+          "name": "AiWalkToTargetTranform",
+          "parameterCount": 2
+        },
+        {
+          "name": "AiWalkToTarget",
+          "parameterCount": 1
+        },
+        {
+          "name": "AiWalkToTargetRotate",
+          "parameterCount": 2
+        },
+        {
+          "name": "AiSpeedNavigation",
+          "parameterCount": 1
+        },
+        {
+          "name": "AiShraplyStop",
+          "parameterCount": 0
+        },
+        {
+          "name": "FaceLayer",
+          "parameterCount": 1
+        },
+        {
+          "name": "FaceLayerFast",
+          "parameterCount": 1
+        },
+        {
+          "name": "FaceSetTexture",
+          "parameterCount": 0
+        },
+        {
+          "name": "FaceColorUpdate",
+          "parameterCount": 0
+        },
+        {
+          "name": "FaceEmotion",
+          "parameterCount": 1
+        },
+        {
+          "name": "FaceEmotionFast",
+          "parameterCount": 1
+        },
+        {
+          "name": "FaceEmotionOff",
+          "parameterCount": 0
+        },
+        {
+          "name": "FaceEmotionFastOff",
+          "parameterCount": 0
+        },
+        {
+          "name": "FaceEmotionType",
+          "parameterCount": 1
+        },
+        {
+          "name": ".ctor",
+          "parameterCount": 0
+        }
+      ]
+    },
+    "Location34_Communication": {
+      "namespace": "",
+      "fields": [
+        "eventStartAddon",
+        "checkNearPosition",
+        "playerT",
+        "cameraT",
+        "timeStopNextCheck",
+        "eventWalkReadyAddonActive",
+        "eventWalkReadyAddon",
+        "roomPlayer",
+        "mitaNeedToPoint",
+        "timeRotateToPlayer",
+        "timeFinishPoint",
+        "mitaCanWalk",
+        "positionsForMita",
+        "mita",
+        "eventWalkStart",
+        "eventWalkReady",
+        "mitaAnimationIdle",
+        "mitaAnimationWalk",
+        "capsulePlaceMita",
+        "wasOtherInteractive",
+        "onStartActiveAddon",
+        "otherInteractive",
+        "addonInteractive",
+        "addonOnStartActive",
+        "addonObjectsInteractive",
+        "addonObjectsReverseInteractive",
+        "eventStartInteractive",
+        "eventStopInteractive",
+        "eventDontWalk",
+        "eventStartDontWalk",
+        "eventStopDontWalk",
+        "indexSwitchAnimation",
+        "timeRandomSwitchAnimation",
+        "timeSwitchAnimation",
+        "timeAnimationSafe",
+        "playTypeOhterAnimation",
+        "mitaAnimator",
+        "otherAnimation",
+        "animationsBehaviour",
+        "animationsBehaviourIK",
+        "soundAnimationBehaviour",
+        "objectInHandsMita",
+        "audioMitaMove",
+        "timeCheckPointStopMove",
+        "mitaFixPosition",
+        "objectLookAfter",
+        "timeInputMove",
+        "timeUninputMove",
+        "positionPlayerBlock",
+        "timeMitaBlock",
+        "layerMob",
+        "layerDefault",
+        "mitaForwardBlock",
+        "play",
+        "interactiveNow"
+      ],
+      "methods": [
+        {
+          "name": "Start",
+          "parameterCount": 0
+        },
+        {
+          "name": "Update",
+          "parameterCount": 0
+        },
+        {
+          "name": "FixedUpdate",
+          "parameterCount": 0
+        },
+        {
+          "name": "LateUpdate",
+          "parameterCount": 0
+        },
+        {
+          "name": "MitaStopPoint",
+          "parameterCount": 0
+        },
+        {
+          "name": "SwitchAnimationClassic",
+          "parameterCount": 0
+        },
+        {
+          "name": "ActivationOtherAnimation",
+          "parameterCount": 1
+        },
+        {
+          "name": "MitaGoPoint",
+          "parameterCount": 1
+        },
+        {
+          "name": "CheckNearPosition",
+          "parameterCount": 0
+        },
+        {
+          "name": "SwitchOtherAnimation",
+          "parameterCount": 1
+        },
+        {
+          "name": "PlayBehaviourAnimation",
+          "parameterCount": 1
+        },
+        {
+          "name": "MitaBlockPlayer",
+          "parameterCount": 0
+        },
+        {
+          "name": "CancelBlockPlayer",
+          "parameterCount": 0
+        },
+        {
+          "name": "DeactiveObjectsAddonAnimationMita",
+          "parameterCount": 0
+        },
+        {
+          "name": "PlayerInRoom",
+          "parameterCount": 1
+        },
+        {
+          "name": "ActivationAddon",
+          "parameterCount": 1
+        },
+        {
+          "name": "ActivationCanWalk",
+          "parameterCount": 1
+        },
+        {
+          "name": "StartAddon",
+          "parameterCount": 0
+        },
+        {
+          "name": "StopAddon",
+          "parameterCount": 0
+        },
+        {
+          "name": "InteractiveActive",
+          "parameterCount": 1
+        },
+        {
+          "name": "InteractiveActiveWithoutCheckPosition",
+          "parameterCount": 1
+        },
+        {
+          "name": "MitaWalkToPoint",
+          "parameterCount": 1
+        },
+        {
+          "name": "TakeEventWhenReadyWalk",
+          "parameterCount": 1
+        },
+        {
+          "name": "TakeEventWhenReadyWalkIgnoryAnimation",
+          "parameterCount": 1
+        },
+        {
+          "name": "TimeAddOtherAnimation",
+          "parameterCount": 1
+        },
+        {
+          "name": "ChangeLookAfter",
+          "parameterCount": 1
+        },
+        {
+          "name": "ChangeLookAfterPlayer",
+          "parameterCount": 0
+        },
+        {
+          "name": "StopCheckPointTime",
+          "parameterCount": 1
+        },
+        {
+          "name": "UpdateCapsulaPosition",
+          "parameterCount": 0
+        },
+        {
+          "name": "MitaInstantAnimation",
+          "parameterCount": 1
+        },
+        {
+          "name": "MitaNormalizeIK",
+          "parameterCount": 0
+        },
+        {
+          "name": "MitaOffIK",
+          "parameterCount": 0
+        },
+        {
+          "name": "AnimationReWalk",
+          "parameterCount": 1
+        },
+        {
+          "name": "AnimationReIdle",
+          "parameterCount": 1
+        },
+        {
+          "name": ".ctor",
+          "parameterCount": 0
+        }
+      ]
+    },
+    "Dialogue_3DText": {
+      "namespace": "",
+      "fields": [
+        "sizeHeight",
+        "sizeWidth",
+        "boxVisible",
+        "font",
+        "indexString",
+        "noiseStart",
+        "noise",
+        "exampleSymbol",
+        "themeDialogue",
+        "align",
+        "timeShow",
+        "wasTimeRandomLook",
+        "wasLookObject",
+        "speaker",
+        "emotionStart",
+        "emotionFinish",
+        "lookOnPlayer",
+        "timeFinish",
+        "eventFinish",
+        "eventFinishOk",
+        "eventFinishPrint",
+        "nextText",
+        "audioPrint",
+        "nextpop",
+        "audioVoice",
+        "timeSound",
+        "voicePlay",
+        "sounds",
+        "voiceNext",
+        "dontSubtitles",
+        "showSubtitles",
+        "dontVoice",
+        "eventDontVoice",
+        "scrgc",
+        "timePrint",
+        "stop",
+        "xPrint",
+        "indexChar",
+        "textPrint",
+        "sizeSymbol",
+        "textPrintNow",
+        "ch",
+        "symbolObjects"
+      ],
+      "methods": [
+        {
+          "name": "Start",
+          "parameterCount": 0
+        },
+        {
+          "name": "LoadVoice",
+          "parameterCount": 1
+        },
+        {
+          "name": "Update",
+          "parameterCount": 0
+        },
+        {
+          "name": "DestroySymbol",
+          "parameterCount": 1
+        },
+        {
+          "name": "SymbolJump",
+          "parameterCount": 0
+        },
+        {
+          "name": "AllJumps",
+          "parameterCount": 0
+        },
+        {
+          "name": "StopNextDialogue",
+          "parameterCount": 0
+        },
+        {
+          "name": "StopFastNextDialogue",
+          "parameterCount": 0
+        },
+        {
+          "name": "SetStyleFont",
+          "parameterCount": 0
+        },
+        {
+          "name": ".ctor",
+          "parameterCount": 0
+        }
+      ]
+    },
+    "PlayerMove": {
+      "namespace": "",
+      "fields": [
+        "headOffsetWalkForward",
+        "headOffsetWalkBack",
+        "headOffsetWalkRight",
+        "canRun",
+        "needRun",
+        "intensityMouse",
+        "scrpp",
+        "scrppik",
+        "scrpah",
+        "timeCameraFreeze",
+        "faceWall",
+        "forwardHead",
+        "heightHead",
+        "rotX",
+        "rotY",
+        "clampRotYMin",
+        "clampRotYMax",
+        "timeCast",
+        "cameraOtherTargetLerp",
+        "cameraOtherTarget",
+        "timeCameraOtherTargetLerp",
+        "speedCameraOtherTargetLerp",
+        "cameraOtherTargetWasPosition",
+        "cameraOtherTargetWasRotation",
+        "mainCamera",
+        "cameraPostProcessing",
+        "head",
+        "animationHeadWalk",
+        "animationHeadWalkTime",
+        "animationHeadRotationX",
+        "animationHeadTorationXTime",
+        "animationHeadRotationY",
+        "animationHeadTorationYTime",
+        "headPerson",
+        "castHead",
+        "castMove",
+        "castFixCamera",
+        "ikHead",
+        "animationCameraZoom",
+        "zoom",
+        "zoomControl",
+        "timeZoom",
+        "zoomWas",
+        "fixHead",
+        "cameraNoise",
+        "dontMove",
+        "stopMouseMove",
+        "speed",
+        "speedAnim",
+        "moveH",
+        "moveV",
+        "rb",
+        "hide",
+        "ladderSpeed",
+        "velocityNormalized",
+        "moveSlow",
+        "velocityLocal",
+        "speedVelocity",
+        "speedPlayer",
+        "canSit",
+        "needSit",
+        "sit",
+        "capsule",
+        "timeSitStart",
+        "timeSitStop",
+        "animationHandRun",
+        "timeAnimationHandNow",
+        "animationHandsLoop",
+        "animationHandsStop",
+        "eventAnimationHandStartLoop",
+        "animArmsFaceOver",
+        "typeAnimationArms",
+        "animationArmsFace",
+        "animationArmsRechangeItem",
+        "nameStatePlayNow",
+        "scrAnimationNow",
+        "animationRun",
+        "keepItem",
+        "animationFast",
+        "timeAnimationNow",
+        "timeAnimationAfter",
+        "animationLoopRun",
+        "animationLoop",
+        "animationStop",
+        "animationPosition",
+        "eventAnimationStartLoop",
+        "typeAnimation",
+        "rotationPlayerSave",
+        "positionPlayerSave",
+        "animOver",
+        "angleHeadRotateAnimation",
+        "rotXAnim",
+        "rotYAnim",
+        "animForward",
+        "animRight",
+        "stopAnimationPositionHips",
+        "stopAnimationFastBody",
+        "stopAPHStartPos",
+        "stopAPHStopPos",
+        "animationBlend",
+        "animationBlendTime",
+        "animationBlendCamera",
+        "animPerson",
+        "animArmsFace",
+        "hipsPerson",
+        "timeAnimOtherFloat",
+        "animatorFloatOtherA",
+        "animatorFloatOtherB",
+        "animationCameraIntensity",
+        "animationCameraSpeed",
+        "animationCameraActive",
+        "timeAnimationCamera",
+        "animationCameraX",
+        "animationCameraY",
+        "audioRotation",
+        "volumeRotation",
+        "foot",
+        "animationLook",
+        "timeAnimationLook",
+        "rotationLookWasX",
+        "rotationLookWasY",
+        "lookTarget",
+        "lookTime",
+        "lookEventEnd",
+        "keyRun",
+        "hideItem",
+        "item",
+        "blockInteractive",
+        "hit",
+        "objectCast",
+        "objectCastInteractive",
+        "objectCastHandInteractive",
+        "distanceCast",
+        "countFloorFix",
+        "timeFloorFix",
+        "pointFloorFix"
+      ],
+      "methods": [
+        {
+          "name": "Awake",
+          "parameterCount": 0
+        },
+        {
+          "name": "StartComponent",
+          "parameterCount": 0
+        },
+        {
+          "name": "Update",
+          "parameterCount": 0
+        },
+        {
+          "name": "LateUpdate",
+          "parameterCount": 0
+        },
+        {
+          "name": "Animation",
+          "parameterCount": 0
+        },
+        {
+          "name": "FixedUpdate",
+          "parameterCount": 0
+        },
+        {
+          "name": "GetLocalPositionHead",
+          "parameterCount": 0
+        },
+        {
+          "name": "AnimationPlay",
+          "parameterCount": 8
+        },
+        {
+          "name": "AnimationPlayStop",
+          "parameterCount": 0
+        },
+        {
+          "name": "AnimationStop",
+          "parameterCount": 0
+        },
+        {
+          "name": "AnimationStopFull",
+          "parameterCount": 0
+        },
+        {
+          "name": "AnimationFloatSet",
+          "parameterCount": 2
+        },
+        {
+          "name": "AnimationOtherBlend",
+          "parameterCount": 1
+        },
+        {
+          "name": "Step",
+          "parameterCount": 0
+        },
+        {
+          "name": "AnimationFastStop",
+          "parameterCount": 0
+        },
+        {
+          "name": "AnimationCameraPlay",
+          "parameterCount": 3
+        },
+        {
+          "name": "AnimationCameraStop",
+          "parameterCount": 0
+        },
+        {
+          "name": "AnimationHandPlay",
+          "parameterCount": 7
+        },
+        {
+          "name": "AnimationHandPlayFast",
+          "parameterCount": 0
+        },
+        {
+          "name": "AnimationHandPlayStop",
+          "parameterCount": 0
+        },
+        {
+          "name": "AnimationHandStop",
+          "parameterCount": 0
+        },
+        {
+          "name": "TeleportRotate",
+          "parameterCount": 1
+        },
+        {
+          "name": "TeleportPlayer",
+          "parameterCount": 1
+        },
+        {
+          "name": "TeleportPlayer",
+          "parameterCount": 2
+        },
+        {
+          "name": "TeleportPlayer",
+          "parameterCount": 3
+        },
+        {
+          "name": "TeleportPlayerGeneral",
+          "parameterCount": 0
+        },
+        {
+          "name": "Look",
+          "parameterCount": 3
+        },
+        {
+          "name": "LookStop",
+          "parameterCount": 0
+        },
+        {
+          "name": "Hide",
+          "parameterCount": 1
+        },
+        {
+          "name": "SitHold",
+          "parameterCount": 0
+        },
+        {
+          "name": "ResetCast",
+          "parameterCount": 0
+        },
+        {
+          "name": "HideBody",
+          "parameterCount": 1
+        },
+        {
+          "name": "SitNeed",
+          "parameterCount": 1
+        },
+        {
+          "name": "RunNeed",
+          "parameterCount": 1
+        },
+        {
+          "name": "BlockInteractive",
+          "parameterCount": 0
+        },
+        {
+          "name": "SlowTimeMove",
+          "parameterCount": 1
+        },
+        {
+          "name": "UpdateSettingsCamera",
+          "parameterCount": 0
+        },
+        {
+          "name": "CameraNoise",
+          "parameterCount": 1
+        },
+        {
+          "name": "CameraTargetOther",
+          "parameterCount": 3
+        },
+        {
+          "name": "CameraTargetOther",
+          "parameterCount": 1
+        },
+        {
+          "name": "TakeItem",
+          "parameterCount": 1
+        },
+        {
+          "name": "RemoveItem",
+          "parameterCount": 0
+        },
+        {
+          "name": "HideItem",
+          "parameterCount": 1
+        },
+        {
+          "name": "GetBoneRightItem",
+          "parameterCount": 0
+        },
+        {
+          "name": "GetBoneLeftItem",
+          "parameterCount": 0
+        },
+        {
+          "name": ".ctor",
+          "parameterCount": 0
+        }
+      ]
+    },
+    "PlayerPerson": {
+      "namespace": "",
+      "fields": [
+        "eventsPlayer",
+        "anim",
+        "blinkPlay",
+        "timeBlink",
+        "blinkTimeAnimation",
+        "timeEyesTarget",
+        "animationBlink",
+        "meshHead",
+        "ikEyesTarget",
+        "setColor",
+        "timeReColor",
+        "meshes"
+      ],
+      "methods": [
+        {
+          "name": "Start",
+          "parameterCount": 0
+        },
+        {
+          "name": "Update",
+          "parameterCount": 0
+        },
+        {
+          "name": "BlinkPlay",
+          "parameterCount": 1
+        },
+        {
+          "name": "EventKey",
+          "parameterCount": 1
+        },
+        {
+          "name": "NewEvent",
+          "parameterCount": 1
+        },
+        {
+          "name": "StepMove",
+          "parameterCount": 0
+        },
+        {
+          "name": "Step",
+          "parameterCount": 0
+        },
+        {
+          "name": "SetColorOutline",
+          "parameterCount": 1
+        },
+        {
+          "name": ".ctor",
+          "parameterCount": 0
+        }
+      ]
+    }
+  },
+  "missingRequiredMembers": [],
+  "downloadChecks": [
+    {
+      "url": "https://unity.bepinex.dev/libraries/2021.3.35.zip",
+      "reachable": true,
+      "statusCode": 200
+    },
+    {
+      "url": "https://github.com/BepInEx/BepInEx/releases/download/v6.0.0-pre.2/BepInEx-Unity.IL2CPP-win-x64-6.0.0-pre.2.zip",
+      "reachable": true,
+      "statusCode": 200
+    }
+  ],
+  "runtimeVerified": false,
+  "runtimeProbeStatus": "NOT_RUN",
+  "limitations": [
+    "Metadata members were parsed by declaring type; native method execution was not tested.",
+    "Scene objects, prefab availability, dialogue effects, and input ownership require an in-game probe.",
+    "HTTP HEAD success proves reachability only, not archive integrity or loader compatibility."
+  ],
+  "metadataFormatReference": "https://github.com/Perfare/Il2CppDumper/blob/4741d46ba9cd6159c5d853eb9d6fc48b4bfa2b1a/Il2CppDumper/Il2Cpp/MetadataClass.cs"
+}

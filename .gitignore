@@ -1,0 +1,25 @@
+# Build artifacts
+**/bin/
+**/obj/
+*.user
+*.pdb
+
+# Game installation and binaries (contains BepInEx, game files, and local configs)
+MiSide_Dev/
+
+# Local runtimes, voice models, caches, and venvs
+local/
+**/__pycache__/
+*.pyc
+
+# Configuration files and API keys (CRITICAL: prevents leaking API keys)
+*.cfg
+*.ini
+*.env
+*.key
+*.secret
+local.mitaai.probe.cfg
+
+# Logs
+*.log
+

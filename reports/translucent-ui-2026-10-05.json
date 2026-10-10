@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-05",
+  "pluginVersion": "0.4.3",
+  "status": "GAMEPLAY_UI_CREATED_VISUAL_TEST_PENDING",
+  "installedSha256": "1B5B504CD10A8F871D72B2F141B7F906D93D4D2789ECBA6CC5AB832753E6D7C5",
+  "buildWarnings": 0,
+  "buildErrors": 0,
+  "managedChecksPassed": 185,
+  "buildInstalledManifestMatch": true,
+  "originalGameFingerprintsUnchanged": true,
+  "gameplaySceneReached": true,
+  "uiCreationLogged": true,
+  "panelFillOpacity": 0.38,
+  "promptFillOpacity": 0.60,
+  "tabOpacity": 0.70,
+  "keyBadgeOpacity": 0.80,
+  "borderOpacity": 0.78,
+  "textOpacity": 1.0,
+  "borderMaskCenterTransparent": true,
+  "priorRoundedGeometryScreenshotVerified": true,
+  "newOpacityScreenshotVerified": false,
+  "dialogueBehaviorChanged": false,
+  "targetingBehaviorChanged": false,
+  "realAiConnected": false,
+  "nativeReplyVisibilityVerified": false,
+  "priorNativePrintProgress": {
+    "version": "0.4.2",
+    "hierarchyActive": true,
+    "enabled": true,
+    "index": 18,
+    "printedLength": 18,
+    "symbolCount": 15,
+    "stopped": false,
+    "sizeSymbol": 0
+  },
+  "limitations": [
+    "Visual opacity/readability needs a fresh in-game screenshot.",
+    "Native printing progress is not proof of visible text; prior symbol size zero remains unresolved.",
+    "Rounded geometry, palette and fade/slide are reference-inspired mod UI, not an exact native sprite clone."
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-05",
+  "pluginVersion": "0.4.6",
+  "sha256": "8F24145255B8FD23A93B7C90A2CE98C892343B219F8F2DF41AAC32AC71A93E7C",
+  "priorFailure": {
+    "version": "0.4.5",
+    "engineTrace": "GlobalLanguage.GetString -> Dialogue_3DText.Start: IndexOutOfRangeException; subsequent Update null references",
+    "badAssumption": "indexString=-1 is not a supported localization bypass in this build",
+    "visual": "Submitted letters are world-space, slanted and off to the side; user requests screen bottom-center"
+  },
+  "build": { "warnings": 0, "errors": 0, "managedChecksPassed": 216 },
+  "installation": {
+    "userConfirmedNormalGameClosure": true,
+    "buildInstalledManifestHashesMatch": true,
+    "originalGameFingerprintsUnchanged": true,
+    "gameRelaunched": true,
+    "pluginLoadAndMainThreadStartupVerified": true
+  },
+  "presentation": {
+    "renderMode": "ScreenSpaceOverlay",
+    "anchor": [0.5, 0.16],
+    "visualAssets": "Local game font selected by native UI_TextFontLanguage, copied native UI effects",
+    "driver": "Mod-owned Unicode-safe typewriter, hold and single Text replacement",
+    "nativeQuestDriverInvoked": false,
+    "localizationPatches": false,
+    "originalDialogueObjectsOrWidgetsWritten": false,
+    "storyPriority": "Active native dialogue/changer, cutsceneRun, isPaused; input/player/focus/scene guards retained"
+  },
+  "verification": {
+    "sourceRemovalOfFailingDriver": true,
+    "managedRevealTimingUnicodeCancellationChecks": true,
+    "currentVisualAcceptance": "User said now its fine for now; provisional acceptance, no new screenshot supplied",
+    "storyCoexistence": "Pending actual game verification",
+    "freshSubmissionEngineErrorReview": "One 13-character player line followed by 22-character configured Mita fixture logged; no Exception/GlobalLanguage/Dialogue_3DText errors in current Unity Player.log at review",
+    "gameplayScene": "Scene 3 - WeTogether",
+    "selectedFontFamily": "Rounded Mplus 1c,FairyMuffinRoundPop",
+    "sequenceSchedulingObserved": true
+  },
+  "scope": { "fixedDiagnosticReply": true, "liveAI": false, "voice": false, "persistentMemory": false },
+  "limitations": [
+    "Native visual asset reuse is not native quest dialogue playback or native symbol animation.",
+    "Silent quest animations are not exhaustively detected by the known story control gates.",
+    "Managed checks do not render Unity UI or prove input/cutscene coexistence."
+  ]
+}

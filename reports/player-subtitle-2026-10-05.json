@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-05",
+  "pluginVersion": "0.4.4",
+  "sha256": "A063CF424D1A2F88473F6EAD2828BF87974B3508FC0A005384ADF975AB374AE5",
+  "build": { "warnings": 0, "errors": 0, "managedChecksPassed": 196 },
+  "installation": {
+    "userConfirmedNormalGameClosure": true,
+    "buildInstalledManifestHashesMatch": true,
+    "originalGameFingerprintsUnchanged": true,
+    "gameRelaunched": true
+  },
+  "presentation": {
+    "editableDraft": "Mod-owned unboxed orange/white-outlined UI Text using local game font/effects; not native story playback",
+    "submittedLine": "Sanitized independent native Player-themed Dialogue_3DText clone",
+    "followingReply": "Sanitized native Mita-themed fixed diagnostic fixture",
+    "prompt": "Existing translucent rounded nearby/aimed E prompt, unchanged",
+    "timing": "Length-based estimate; not native completion callback",
+    "displayExcerptTextElements": 240
+  },
+  "runtime": {
+    "scene": "Scene 4 - StartSecret",
+    "playerTemplate": "World/Quests/Quest 1/Dialogues/Dialogue Player/Dialogue BedroomMirror/DPlayer 1",
+    "mitaTemplate": "World/Quests/Quest 1/Game Aihastion/Dialogues/Fight/Dialogue Win 2/DMita 3",
+    "submittedCharacters": 5,
+    "playerProgress": { "printed": 5, "symbols": 5, "sizeSymbol": 0 },
+    "mitaProgress": { "printed": 18, "symbols": 15, "sizeSymbol": 0 },
+    "unityPlayerLogErrors": {
+      "Dialogue_3DText.Start.NullReferenceException": 2,
+      "Dialogue_3DText.Update.NullReferenceException": 1,
+      "objectAttributionKnown": false
+    },
+    "visiblePlaybackVerified": false,
+    "visualAcceptance": "Awaiting user observations/screenshots in regular chat",
+    "storyCoexistenceVerified": false
+  },
+  "scope": { "liveAI": false, "provider": false, "voice": false, "persistentMemory": false },
+  "limitations": [
+    "Native Start/Update errors are unresolved; activation and printing markers do not prove rendering.",
+    "Zero symbol size remains unresolved.",
+    "Draft placement/colors/outline are reference-inspired, not a pixel-perfect native editable system.",
+    "Managed checks do not exercise Unity native lifecycle, rendering, keyboard routing or cutscene coexistence."
+  ]
+}
