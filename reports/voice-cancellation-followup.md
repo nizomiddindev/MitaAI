@@ -3,6 +3,13 @@
 **Date:** 22 October 2026 · **Author:** Claude Code · **Checkout:** `D:\MitaAI\local\worktrees\claude-code`, branch `codex/claude-work` (base `8935813`)
 **Status:** implemented and checked with automated tests only. Not integrated, not deployed, not verified in game, and the live GPU smoke test was not run.
 
+## Codex Integration Review (22 October)
+
+- Reviewed original commit 517697d and cherry-picked it as cc98177 onto main without conflicts. This supersedes the earlier not-integrated status; nothing was deployed.
+- Independently verified the combined Release plugin build with zero warnings/errors, 381 managed voice/input checks, and 98 context/formatter checks (including the separately integrated Antigravity formatter). No blocking issue identified in the current scope.
+- Real Python/F5, Unity playback and the updated GPU smoke test remain unexercised. Installed 0.6.2 DLL is unchanged and still uses the old stop-on-submitted-cancel behavior. Source integration must not be reported as gameplay verification or a measured performance improvement.
+- No game/model launch or push. Final process check found no game or fake-worker process. HANDOFF.md records the integration state and pending acceptance gate.
+
 ## Problem
 
 Finding 2 of `reports/claude-voice-review.md` was that cancelling a request already sent to the worker killed the warm F5 worker. In game, that cancellation comes from a story line, a scene change or a lost binding during generation. The next worker then needed a cold restart of about 25–70 s, and replies were text-only until it finished.
