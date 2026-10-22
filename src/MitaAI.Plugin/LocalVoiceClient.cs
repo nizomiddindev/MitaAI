@@ -32,6 +32,8 @@ internal sealed class LocalVoiceClient : IDisposable
     private TaskCompletionSource<bool>? ready;
     private TaskCompletionSource<VoiceResult>? pending;
     private string pendingId = "";
+    // The caller gave up on the pending request; its late response is drained, not decoded.
+    private bool abandoned;
     private DateTime retryAfter;
     private int startupFailures;
     private bool unavailable;
@@ -157,23 +159,31 @@ internal sealed class LocalVoiceClient : IDisposable
             completion = pending = new(TaskCreationOptions.RunContinuationsAsynchronously);
         }
         bool submitted = false;
-        CancellationTokenSource? timeout = null;
         try
         {
-            timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             // Nothing has reached the worker yet, so an early cancellation leaves it warm.
-            if (timeout.IsCancellationRequested) return new(null, "cancelled-before-submit");
-            timeout.CancelAfter(options.SynthesisTimeout);
-            // From here a partial frame may exist; only stopping the worker keeps the protocol safe.
+            if (cancellationToken.IsCancellationRequested) return new(null, "cancelled-before-submit");
+            // From here a partial frame may exist; a transport failure stops the worker to keep the protocol safe.
             submitted = true;
+            // The deadline runs from submission and still applies after the caller abandons the request.
+            _ = WatchSynthesis(owned, completion.Task);
             await owned.StandardInput.WriteLineAsync(JsonSerializer.Serialize(new { id, text })).ConfigureAwait(false);
             await owned.StandardInput.FlushAsync().ConfigureAwait(false);
-            return await completion.Task.WaitAsync(timeout.Token).ConfigureAwait(false);
+            return await completion.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (submitted)
+        catch (OperationCanceledException) when (submitted && cancellationToken.IsCancellationRequested)
         {
-            StopOwned(owned, cancellationToken.IsCancellationRequested ? "cancelled" : "synthesis-timeout");
-            return new(null, "cancelled-or-timeout");
+            // The whole frame was written before cancellation could be observed. Keep the worker warm and
+            // busy until its response for this id arrives, then discard that response.
+            lock (sync)
+            {
+                if (pending == completion)
+                {
+                    abandoned = true;
+                    log("MITAAI_VOICE_ABANDONED reason=cancelled");
+                }
+            }
+            return new(null, "cancelled-abandoned");
         }
         catch (Exception) when (submitted)
         {
@@ -186,8 +196,18 @@ internal sealed class LocalVoiceClient : IDisposable
         }
         finally
         {
-            timeout?.Dispose();
-            lock (sync) if (pending == completion) { pending = null; pendingId = ""; }
+            // Submitted requests are released by their response or by StopOwned.
+            if (!submitted) lock (sync) if (pending == completion) { pending = null; pendingId = ""; }
+        }
+    }
+
+    private async Task WatchSynthesis(Process owned, Task<VoiceResult> request)
+    {
+        try { await request.WaitAsync(options.SynthesisTimeout).ConfigureAwait(false); }
+        catch (TimeoutException)
+        {
+            // Checked and stopped under one lock so a response arriving now cannot be misattributed.
+            lock (sync) if (process == owned && pending?.Task == request) StopOwned(owned, "synthesis-timeout");
         }
     }
 
@@ -220,15 +240,37 @@ internal sealed class LocalVoiceClient : IDisposable
                 }
                 if (type != "audio") throw new InvalidDataException();
                 TaskCompletionSource<VoiceResult>? completion;
+                bool drained;
                 lock (sync)
                 {
                     if (process != owned || pending == null || message.GetProperty("id").GetString() != pendingId) continue;
+                    // The worker is free once it has answered this id.
                     completion = pending;
+                    drained = abandoned;
+                    pending = null;
+                    pendingId = "";
+                    abandoned = false;
                 }
-                VoiceResult result = message.GetProperty("ok").GetBoolean()
-                    ? new(VoiceAudio.Decode(Convert.FromBase64String(message.GetProperty("wav").GetString()!)),
-                        GenerationMs: message.GetProperty("generationMs").GetInt64())
-                    : new(null, "synthesis-failed:" + ErrorCode(message));
+                if (drained)
+                {
+                    completion.TrySetResult(new(null, "abandoned"));
+                    log("MITAAI_VOICE_ABANDONED_DRAINED");
+                    continue;
+                }
+                VoiceResult result;
+                try
+                {
+                    result = message.GetProperty("ok").GetBoolean()
+                        ? new(VoiceAudio.Decode(Convert.FromBase64String(message.GetProperty("wav").GetString()!)),
+                            GenerationMs: message.GetProperty("generationMs").GetInt64())
+                        : new(null, "synthesis-failed:" + ErrorCode(message));
+                }
+                catch
+                {
+                    // This request is no longer pending, so StopOwned cannot release its caller.
+                    completion.TrySetResult(new(null, "worker-protocol-or-runtime"));
+                    throw;
+                }
                 completion.TrySetResult(result);
             }
             StopOwned(owned, "worker-exited");
@@ -259,6 +301,7 @@ internal sealed class LocalVoiceClient : IDisposable
             pending?.TrySetResult(new(null, reason));
             pending = null;
             pendingId = "";
+            abandoned = false;
             // Killing a process tree and disposing its pipes can be slow; never do it on the caller's (Unity) thread.
             cleanup = Task.Run(() => Terminate(owned, reason));
             if (reason is "cancelled" or "disabled" or "shutdown" or "plugin-failed")

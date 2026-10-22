@@ -688,18 +688,106 @@ using (var echoVoice = new LocalVoiceClient(_ => { }, new VoiceWorkerOptions
         "per-request worker code reaches diagnostics without a restart");
 }
 
-using (var silentVoice = new LocalVoiceClient(_ => { }, new VoiceWorkerOptions { CreateStartInfo = _ => FakeWorker("silent") }))
+// Submitted cancellation: the caller is released at once, the worker stays warm and busy until it answers.
+// The fake answers an "abandon" request with an undecodable WAV after a decoy reply for another id,
+// so any decode of abandoned audio or misattributed reply would stop the worker.
+var drainLog = new System.Collections.Concurrent.ConcurrentQueue<string>();
+int drainStarts = 0;
+using (var drainVoice = new LocalVoiceClient(drainLog.Enqueue, new VoiceWorkerOptions
 {
-    silentVoice.EnsureStarted("");
-    Check(await silentVoice.WaitUntilReadyAsync(TimeSpan.FromSeconds(15)), "silent fake worker becomes ready");
-    using var submittedCancel = new CancellationTokenSource();
-    var inFlight = silentVoice.SynthesizeAsync("Привет", submittedCancel.Token);
-    await Task.Delay(200);
-    submittedCancel.Cancel();
-    var cancelled = await inFlight;
-    Check(cancelled.Audio == null && cancelled.Error == "cancelled-or-timeout" && !silentVoice.IsReady,
-        "cancelling a submitted request still stops the worker");
-    await silentVoice.Cleanup.WaitAsync(TimeSpan.FromSeconds(10));
+    CreateStartInfo = _ => { Interlocked.Increment(ref drainStarts); return FakeWorker("delayed-800"); }
+}))
+{
+    drainVoice.EnsureStarted("");
+    Check(await drainVoice.WaitUntilReadyAsync(TimeSpan.FromSeconds(15)), "delayed fake worker becomes ready");
+    using var abandonCancel = new CancellationTokenSource();
+    var abandoning = drainVoice.SynthesizeAsync("Привет abandon", abandonCancel.Token);
+    await Task.Delay(150);
+    var releaseTimer = System.Diagnostics.Stopwatch.StartNew();
+    abandonCancel.Cancel();
+    var abandonedResult = await abandoning;
+    Check(abandonedResult.Audio == null && abandonedResult.Error == "cancelled-abandoned" && releaseTimer.ElapsedMilliseconds < 250,
+        "cancelling a submitted request releases the caller immediately");
+    Check(drainVoice.IsReady && drainVoice.State == VoiceWorkerState.Ready && drainLog.Any(line => line.Contains("MITAAI_VOICE_ABANDONED reason=cancelled")),
+        "cancelling a submitted request keeps the warm worker");
+    var whileDraining = await drainVoice.SynthesizeAsync("Привет", CancellationToken.None);
+    Check(whileDraining.Audio == null && whileDraining.Error == "busy", "abandoned request keeps the client busy");
+    Check(await Eventually(() => drainLog.Any(line => line.Contains("MITAAI_VOICE_ABANDONED_DRAINED"))), "late abandoned response drains");
+    Check(drainVoice.IsReady && !drainLog.Any(line => line.Contains("MITAAI_VOICE_STOPPED")),
+        "abandoned audio is not decoded and replies for other ids are ignored");
+    var afterDrain = await drainVoice.SynthesizeAsync("Привет", CancellationToken.None);
+    // The fake reports how many requests it has received; 2 means the busy attempt was never submitted.
+    Check(afterDrain.Audio != null && afterDrain.GenerationMs == 2 && drainStarts == 1, "next request works after the drain without overlap or restart");
+}
+
+var deadlineLog = new System.Collections.Concurrent.ConcurrentQueue<string>();
+using (var deadlineVoice = new LocalVoiceClient(deadlineLog.Enqueue, new VoiceWorkerOptions
+{
+    SynthesisTimeout = TimeSpan.FromMilliseconds(1000), CreateStartInfo = _ => FakeWorker("silent")
+}))
+{
+    deadlineVoice.EnsureStarted("");
+    Check(await deadlineVoice.WaitUntilReadyAsync(TimeSpan.FromSeconds(15)), "deadline fake worker becomes ready");
+    using var lateCancel = new CancellationTokenSource();
+    var sinceSubmission = System.Diagnostics.Stopwatch.StartNew();
+    var hanging = deadlineVoice.SynthesizeAsync("Привет", lateCancel.Token);
+    await Task.Delay(900);
+    lateCancel.Cancel();
+    Check((await hanging).Error == "cancelled-abandoned", "late cancellation abandons the hung request");
+    Check(await Eventually(() => !deadlineVoice.IsReady, 5000) && sinceSubmission.ElapsedMilliseconds < 1600,
+        "abandoned request deadline is measured from submission");
+    Check(await Eventually(() => deadlineLog.Any(line => line.Contains("MITAAI_VOICE_STOPPED reason=synthesis-timeout"))),
+        "hung worker is terminated after the deadline");
+}
+
+using (var timeoutVoice = new LocalVoiceClient(_ => { }, new VoiceWorkerOptions
+{
+    SynthesisTimeout = TimeSpan.FromMilliseconds(300), CreateStartInfo = _ => FakeWorker("silent")
+}))
+{
+    timeoutVoice.EnsureStarted("");
+    Check(await timeoutVoice.WaitUntilReadyAsync(TimeSpan.FromSeconds(15)), "timeout fake worker becomes ready");
+    var timedOut = await timeoutVoice.SynthesizeAsync("Привет", CancellationToken.None);
+    Check(timedOut.Audio == null && timedOut.Error == "synthesis-timeout" && !timeoutVoice.IsReady,
+        "an awaited request still times out and stops the worker");
+    await timeoutVoice.Cleanup.WaitAsync(TimeSpan.FromSeconds(10));
+}
+
+var crashLog = new System.Collections.Concurrent.ConcurrentQueue<string>();
+using (var crashVoice = new LocalVoiceClient(crashLog.Enqueue, new VoiceWorkerOptions { CreateStartInfo = _ => FakeWorker("exit-after-300") }))
+{
+    crashVoice.EnsureStarted("");
+    Check(await crashVoice.WaitUntilReadyAsync(TimeSpan.FromSeconds(15)), "crashing fake worker becomes ready");
+    using var crashCancel = new CancellationTokenSource();
+    var crashing = crashVoice.SynthesizeAsync("Привет", crashCancel.Token);
+    await Task.Delay(100);
+    crashCancel.Cancel();
+    Check((await crashing).Error == "cancelled-abandoned", "request is abandoned before the worker fails");
+    Check(await Eventually(() => crashVoice.State == VoiceWorkerState.Stopped && crashLog.Any(line => line.Contains("MITAAI_VOICE_STOPPED reason=worker-exited"))),
+        "worker failure during a drain stops the worker");
+}
+
+// Explicit disable, plugin failure and shutdown still stop a worker that is draining an abandoned request.
+foreach (string stopKind in new[] { "disabled", "plugin-failed", "shutdown" })
+{
+    bool drainedWorkerExited = false;
+    var stopVoice = new LocalVoiceClient(_ => { }, new VoiceWorkerOptions
+    {
+        CreateStartInfo = _ => FakeWorker("delayed-10000"),
+        Terminate = process => { LocalVoiceClient.TerminateTree(process); drainedWorkerExited = process.HasExited; }
+    });
+    stopVoice.EnsureStarted("");
+    Check(await stopVoice.WaitUntilReadyAsync(TimeSpan.FromSeconds(15)), "stop-test fake worker becomes ready: " + stopKind);
+    using var stopCancel = new CancellationTokenSource();
+    var draining = stopVoice.SynthesizeAsync("Привет", stopCancel.Token);
+    await Task.Delay(100);
+    stopCancel.Cancel();
+    Check((await draining).Error == "cancelled-abandoned", "request abandoned before stop: " + stopKind);
+    if (stopKind == "shutdown") stopVoice.Dispose();
+    else stopVoice.Stop(stopKind);
+    await stopVoice.Cleanup.WaitAsync(TimeSpan.FromSeconds(10));
+    Check(!stopVoice.IsReady && drainedWorkerExited, "draining worker is stopped by " + stopKind);
+    stopVoice.Dispose();
 }
 
 int ownedStarts = 0, terminations = 0;
@@ -950,6 +1038,23 @@ void RunFakeVoiceWorker(string mode)
     while (Console.ReadLine() is { } line)
     {
         received++;
+        if (mode.StartsWith("exit-after-", StringComparison.Ordinal))
+        {
+            Thread.Sleep(int.Parse(mode["exit-after-".Length..]));
+            return;
+        }
+        if (mode.StartsWith("delayed-", StringComparison.Ordinal))
+        {
+            // Busy like a real worker: stdin is not read while "synthesizing".
+            Thread.Sleep(int.Parse(mode["delayed-".Length..]));
+            using var delayed = System.Text.Json.JsonDocument.Parse(line);
+            string delayedId = delayed.RootElement.GetProperty("id").GetString()!;
+            Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new { type = "audio", id = new string('f', 32), ok = true, wav = "!", generationMs = 0 }));
+            Console.WriteLine(delayed.RootElement.GetProperty("text").GetString()!.Contains("abandon")
+                ? System.Text.Json.JsonSerializer.Serialize(new { type = "audio", id = delayedId, ok = true, wav = "!", generationMs = received })
+                : System.Text.Json.JsonSerializer.Serialize(new { type = "audio", id = delayedId, ok = true, wav, generationMs = received }));
+            continue;
+        }
         if (mode != "echo") continue;
         using var request = System.Text.Json.JsonDocument.Parse(line);
         string id = request.RootElement.GetProperty("id").GetString()!;
@@ -984,6 +1089,12 @@ if (args.Length == 2 && args[0] == "--voice-smoke")
     using var cancelVoice = new CancellationTokenSource();
     var cancelledVoice = liveVoice.SynthesizeAsync("Привет!", cancelVoice.Token);
     cancelVoice.Cancel();
-    if ((await cancelledVoice).Audio != null || liveVoice.IsReady) throw new Exception("Cancelled synthesis retained worker ownership.");
-    Console.WriteLine("VOICE_CANCELLATION_OK audio-discarded=True worker-stopped=True");
+    if ((await cancelledVoice).Audio != null || !liveVoice.IsReady) throw new Exception("Cancelled synthesis returned audio or stopped the warm worker.");
+    // The abandoned request drains in the worker; the client reports busy until then.
+    var drainTimer = System.Diagnostics.Stopwatch.StartNew();
+    VoiceResult afterCancel;
+    while ((afterCancel = await liveVoice.SynthesizeAsync("Привет!", CancellationToken.None)).Error == "busy" && drainTimer.Elapsed < TimeSpan.FromSeconds(60))
+        await Task.Delay(100);
+    if (afterCancel.Audio == null) throw new Exception("Synthesis after cancellation failed: " + afterCancel.Error);
+    Console.WriteLine($"VOICE_CANCELLATION_OK audio-discarded=True worker-kept-warm=True next-generationMs={afterCancel.GenerationMs}");
 }
