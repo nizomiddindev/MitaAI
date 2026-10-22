@@ -9,5 +9,6 @@
   <ItemGroup>
     <!-- Pure snapshot rules only; the Unity collector is compiled with the plugin. -->
     <Compile Include="../../src/MitaAI.Plugin/GameContextSnapshot.cs" Link="GameContextSnapshot.cs" />
+    <Compile Include="../../src/MitaAI.Plugin/GameContextPromptFormatter.cs" Link="GameContextPromptFormatter.cs" />
   </ItemGroup>
 </Project>
