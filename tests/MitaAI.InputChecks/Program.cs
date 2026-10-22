@@ -1,6 +1,13 @@
 using MitaAI.Plugin;
 using UnityEngine;
 
+// Lightweight stand-in for voice_worker.py: same stdio protocol, no Python, model or GPU.
+if (args.Length == 2 && args[0] == "--fake-voice-worker")
+{
+    RunFakeVoiceWorker(args[1]);
+    return;
+}
+
 int checks = 0;
 void Check(bool condition, string name)
 {
@@ -549,4 +556,434 @@ histPlayerScripted.enabled = true;
 histPlayerScripted.stopMouseMove = histBeforeStopMouse;
 Check(histPlayerScripted.stopMouseMove, "history close preserves preexisting stopMouseMove state");
 
-Console.WriteLine($"PASS: {checks} managed composer/visibility/lease/template/turn/screen/ai checks (Unity boundary stubbed). Gameplay remains a manual gate.");
+// Voice data crosses the worker boundary before any Unity object is touched.
+byte[] VoiceWave(short[] samples, int rate = 24000, short channels = 1)
+{
+    using var stream = new MemoryStream();
+    using var writer = new BinaryWriter(stream);
+    writer.Write(System.Text.Encoding.ASCII.GetBytes("RIFF")); writer.Write(36 + samples.Length * 2);
+    writer.Write(System.Text.Encoding.ASCII.GetBytes("WAVEfmt ")); writer.Write(16);
+    writer.Write((short)1); writer.Write(channels); writer.Write(rate); writer.Write(rate * channels * 2);
+    writer.Write((short)(channels * 2)); writer.Write((short)16);
+    writer.Write(System.Text.Encoding.ASCII.GetBytes("data")); writer.Write(samples.Length * 2);
+    foreach (short sample in samples) writer.Write(sample);
+    return stream.ToArray();
+}
+bool VoiceRejected(byte[] bytes)
+{
+    try { VoiceAudio.Decode(bytes); return false; }
+    catch (InvalidDataException) { return true; }
+}
+var voiceWave = VoiceWave(new short[] { -32768, 0, 16384, 32767 });
+var voiceAudio = VoiceAudio.Decode(voiceWave);
+Check(voiceAudio.Samples.Length == 4 && voiceAudio.SampleRate == 24000, "voice WAV decodes mono samples");
+Check(voiceAudio.Samples[0] == -1 && voiceAudio.Samples[2] == 0.5f, "voice PCM conversion preserves sign and scale");
+Check(Math.Abs(voiceAudio.Seconds - 4f / 24000) < 0.00001, "voice duration comes from sample count");
+Check(VoiceRejected(Array.Empty<byte>()), "voice rejects empty frames");
+Check(VoiceRejected(voiceWave[..^1]), "voice rejects truncated RIFF");
+Check(VoiceRejected(VoiceWave(new short[] { 1 }, 48000)), "voice rejects unexpected rate");
+Check(VoiceRejected(VoiceWave(new short[] { 1, 2 }, channels: 2)), "voice rejects stereo");
+Check(VoiceRejected(VoiceWave(new short[] { 0, 0 })), "voice rejects silence");
+var badWave = voiceWave.ToArray();
+badWave[40] = 255;
+Check(VoiceRejected(badWave), "voice rejects out-of-bounds data chunk");
+Check(VoiceRejected(new byte[VoiceAudio.MaximumWaveBytes + 1]), "voice rejects oversized transport");
+var voiceOwner = new VoiceStamp(17, "scene-a", 123);
+Check(voiceOwner.Matches(17, "scene-a", 123), "voice accepts owning turn");
+Check(!voiceOwner.Matches(18, "scene-a", 123), "voice rejects stale request");
+Check(!voiceOwner.Matches(17, "scene-b", 123), "voice rejects old scene");
+Check(!voiceOwner.Matches(17, "scene-a", 124), "voice rejects replaced character");
+Check(!new VoiceStamp(17, "scene-a", 0).Matches(17, "scene-a", 0), "voice rejects absent target");
+using (var absentVoice = new LocalVoiceClient(_ => { }))
+{
+    Check(!absentVoice.IsReady, "voice starts unavailable without a process");
+    Check((await absentVoice.SynthesizeAsync("test", CancellationToken.None)).Audio == null, "unavailable voice returns text fallback");
+    Check(!await absentVoice.WaitUntilReadyAsync(TimeSpan.FromMilliseconds(10)), "unstarted worker does not wait indefinitely");
+}
+
+// Worker lifecycle against the fake worker. Retry delays are zeroed; limits are the production defaults unless stated.
+System.Diagnostics.ProcessStartInfo FakeWorker(string mode)
+{
+    string host = Environment.ProcessPath!;
+    var info = new System.Diagnostics.ProcessStartInfo(host);
+    if (Path.GetFileNameWithoutExtension(host).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
+        info.ArgumentList.Add(System.Reflection.Assembly.GetEntryAssembly()!.Location);
+    info.ArgumentList.Add("--fake-voice-worker");
+    info.ArgumentList.Add(mode);
+    return info;
+}
+async Task<bool> Eventually(Func<bool> condition, int milliseconds = 15000)
+{
+    var timer = System.Diagnostics.Stopwatch.StartNew();
+    while (!condition())
+    {
+        if (timer.ElapsedMilliseconds > milliseconds) return false;
+        await Task.Delay(20);
+    }
+    return true;
+}
+
+var fatalLog = new System.Collections.Concurrent.ConcurrentQueue<string>();
+int fatalStarts = 0;
+using (var fatalVoice = new LocalVoiceClient(fatalLog.Enqueue, new VoiceWorkerOptions
+{
+    FailureRetryDelay = TimeSpan.Zero,
+    CreateStartInfo = _ => { Interlocked.Increment(ref fatalStarts); return FakeWorker("fatal"); }
+}))
+{
+    Check(await Eventually(() => { fatalVoice.EnsureStarted(""); return fatalVoice.State == VoiceWorkerState.Unavailable; }),
+        "repeated startup failures become unavailable");
+    Check(fatalStarts == new VoiceWorkerOptions().MaxStartupFailures, "startup retries stop at the configured limit");
+    Check(fatalLog.Any(line => line.Contains("MITAAI_VOICE_UNAVAILABLE") && line.Contains("error=cuda_unavailable") && line.Contains("autoRetry=False")),
+        "worker fatal code reaches diagnostics");
+    for (int attempt = 0; attempt < 10; attempt++) { fatalVoice.EnsureStarted(""); await Task.Delay(20); }
+    Check(fatalStarts == 3 && fatalVoice.State == VoiceWorkerState.Unavailable, "unavailable worker is not relaunched automatically");
+    fatalVoice.Stop();
+    Check(fatalVoice.State == VoiceWorkerState.Stopped && fatalLog.Any(line => line.Contains("MITAAI_VOICE_RETRY_RESET")),
+        "disabling voice clears the unavailable state");
+    Check(await Eventually(() => { fatalVoice.EnsureStarted(""); return fatalStarts == 4; }), "re-enabled voice starts again");
+}
+
+var missingLog = new List<string>();
+using (var missingVoice = new LocalVoiceClient(missingLog.Add, new VoiceWorkerOptions { FailureRetryDelay = TimeSpan.Zero, MaxStartupFailures = 2 }))
+{
+    string absentProject = Path.Combine(Path.GetTempPath(), "mitaai-absent-" + Guid.NewGuid().ToString("N"));
+    for (int attempt = 0; attempt < 5; attempt++) missingVoice.EnsureStarted(absentProject);
+    Check(missingVoice.State == VoiceWorkerState.Unavailable && missingLog.Count(line => line.Contains("error=worker_files_missing")) == 2,
+        "missing worker files stop after the retry limit");
+}
+
+var hangLog = new System.Collections.Concurrent.ConcurrentQueue<string>();
+bool hungWorkerExited = false;
+using (var hangVoice = new LocalVoiceClient(hangLog.Enqueue, new VoiceWorkerOptions
+{
+    StartupTimeout = TimeSpan.FromMilliseconds(300), MaxStartupFailures = 1,
+    CreateStartInfo = _ => FakeWorker("hang-startup"),
+    Terminate = process => { LocalVoiceClient.TerminateTree(process); hungWorkerExited = process.HasExited; }
+}))
+{
+    hangVoice.EnsureStarted("");
+    Check(hangVoice.State == VoiceWorkerState.Starting, "starting worker is distinct from unavailable");
+    Check(await Eventually(() => hangVoice.State == VoiceWorkerState.Unavailable), "startup timeout counts as a startup failure");
+    await hangVoice.Cleanup.WaitAsync(TimeSpan.FromSeconds(10));
+    Check(hungWorkerExited && hangLog.Any(line => line.Contains("error=startup-timeout")), "timed-out worker is terminated");
+}
+
+int echoStarts = 0;
+using (var echoVoice = new LocalVoiceClient(_ => { }, new VoiceWorkerOptions
+{
+    CreateStartInfo = _ => { Interlocked.Increment(ref echoStarts); return FakeWorker("echo"); }
+}))
+{
+    echoVoice.EnsureStarted("");
+    Check(await echoVoice.WaitUntilReadyAsync(TimeSpan.FromSeconds(15)), "fake worker becomes ready");
+    var early = await echoVoice.SynthesizeAsync("Привет", new CancellationToken(canceled: true));
+    Check(early.Audio == null && early.Error == "cancelled-before-submit", "pre-cancelled request returns text fallback");
+    Check(echoVoice.IsReady && echoVoice.State == VoiceWorkerState.Ready && echoStarts == 1, "pre-cancelled request keeps the warm worker");
+    var spoken = await echoVoice.SynthesizeAsync("Привет", CancellationToken.None);
+    // The fake reports how many requests it has received as generationMs.
+    Check(spoken.Audio != null && spoken.GenerationMs == 1, "pre-cancelled request never reached the worker");
+    var failedSpeech = await echoVoice.SynthesizeAsync("Привет fail", CancellationToken.None);
+    Check(failedSpeech.Audio == null && failedSpeech.Error == "synthesis-failed:invalid_audio" && echoVoice.IsReady,
+        "per-request worker code reaches diagnostics without a restart");
+}
+
+using (var silentVoice = new LocalVoiceClient(_ => { }, new VoiceWorkerOptions { CreateStartInfo = _ => FakeWorker("silent") }))
+{
+    silentVoice.EnsureStarted("");
+    Check(await silentVoice.WaitUntilReadyAsync(TimeSpan.FromSeconds(15)), "silent fake worker becomes ready");
+    using var submittedCancel = new CancellationTokenSource();
+    var inFlight = silentVoice.SynthesizeAsync("Привет", submittedCancel.Token);
+    await Task.Delay(200);
+    submittedCancel.Cancel();
+    var cancelled = await inFlight;
+    Check(cancelled.Audio == null && cancelled.Error == "cancelled-or-timeout" && !silentVoice.IsReady,
+        "cancelling a submitted request still stops the worker");
+    await silentVoice.Cleanup.WaitAsync(TimeSpan.FromSeconds(10));
+}
+
+int ownedStarts = 0, terminations = 0;
+var releaseTermination = new ManualResetEventSlim(false);
+bool stoppedWorkerExited = false;
+using (var ownedVoice = new LocalVoiceClient(_ => { }, new VoiceWorkerOptions
+{
+    StopRetryDelay = TimeSpan.Zero,
+    CreateStartInfo = _ => { Interlocked.Increment(ref ownedStarts); return FakeWorker("silent"); },
+    Terminate = process =>
+    {
+        Interlocked.Increment(ref terminations);
+        releaseTermination.Wait(TimeSpan.FromSeconds(15));
+        LocalVoiceClient.TerminateTree(process);
+        stoppedWorkerExited = process.HasExited;
+    }
+}))
+{
+    ownedVoice.EnsureStarted("");
+    Check(await ownedVoice.WaitUntilReadyAsync(TimeSpan.FromSeconds(15)), "owned fake worker becomes ready");
+    var stopTimer = System.Diagnostics.Stopwatch.StartNew();
+    ownedVoice.Stop();
+    Check(stopTimer.ElapsedMilliseconds < 500 && !ownedVoice.Cleanup.IsCompleted, "worker termination does not block the caller");
+    ownedVoice.Stop();
+    ownedVoice.Stop("plugin-failed");
+    ownedVoice.EnsureStarted("");
+    Check(ownedStarts == 1 && ownedVoice.State == VoiceWorkerState.Stopped, "replacement waits for the previous worker's cleanup");
+    releaseTermination.Set();
+    await ownedVoice.Cleanup.WaitAsync(TimeSpan.FromSeconds(15));
+    Check(terminations == 1 && stoppedWorkerExited, "each worker is terminated exactly once");
+    ownedVoice.EnsureStarted("");
+    Check(ownedStarts == 2 && await ownedVoice.WaitUntilReadyAsync(TimeSpan.FromSeconds(15)), "replacement starts after cleanup");
+}
+
+// Permanent plugin failure: the worker is stopped first and later steps still run when one throws.
+var cleanupSteps = new List<string>();
+var cleanupErrors = new List<string>();
+bool failedWorkerExited = false;
+using (var failureVoice = new LocalVoiceClient(_ => { }, new VoiceWorkerOptions
+{
+    CreateStartInfo = _ => FakeWorker("silent"),
+    Terminate = process => { LocalVoiceClient.TerminateTree(process); failedWorkerExited = process.HasExited; }
+}))
+{
+    failureVoice.EnsureStarted("");
+    Check(await failureVoice.WaitUntilReadyAsync(TimeSpan.FromSeconds(15)), "failure-path fake worker becomes ready");
+    FailureCleanup.Run(cleanupErrors.Add,
+        ("voice-worker", () => { cleanupSteps.Add("voice-worker"); failureVoice.Stop("plugin-failed"); }),
+        ("binding", () => { cleanupSteps.Add("binding"); throw new InvalidOperationException("binding reset failed"); }),
+        ("voice-playback", () => cleanupSteps.Add("voice-playback")));
+    Check(cleanupSteps.SequenceEqual(new[] { "voice-worker", "binding", "voice-playback" }), "failure cleanup runs every step in order");
+    Check(cleanupErrors.Count == 1 && cleanupErrors[0].Contains("step=binding"), "failure cleanup reports the failing step");
+    await failureVoice.Cleanup.WaitAsync(TimeSpan.FromSeconds(10));
+    Check(!failureVoice.IsReady && failedWorkerExited, "plugin failure releases the voice worker");
+}
+var throwingFirst = new List<string>();
+FailureCleanup.Run(_ => { }, ("voice-worker", () => throw new IOException()), ("binding", () => throwingFirst.Add("binding")));
+Check(throwingFirst.Count == 1, "binding cleanup still runs when worker shutdown throws");
+
+// --- Speaking Animation (VoiceLipSync) Checks ---
+(MitaPerson Mita, Audio_BlendShapeVoice Voice, AudioSource NativeSource, AudioSource ModSource) CreateLipSyncFixture(bool initiallyEnabled = true)
+{
+    var headMesh = new SkinnedMeshRenderer { sharedMesh = new Mesh("Blink", "O", "Smile") };
+    var mita = new MitaPerson { meshHead = headMesh };
+    var nativeSource = new AudioSource();
+    var modSource = new AudioSource { isPlaying = true };
+    var voice = new Audio_BlendShapeVoice
+    {
+        enabled = initiallyEnabled,
+        audioVoice = nativeSource,
+        mesh = headMesh,
+        nameShapeO = "O",
+        shapeO = 1,
+        shapesOffInSpeak = new[] { new Audio_BlendShapeVoice_Intensity { indexShape = 2, nameBlendshape = "Smile" } }
+    };
+    return (mita, voice, nativeSource, modSource);
+}
+
+Time.timeScale = 1f;
+var lipSync = new VoiceLipSync();
+var (lsMita, lsVoice, lsNativeSource, lsModSource) = CreateLipSyncFixture(initiallyEnabled: false);
+lsVoice.mesh!.SetBlendShapeWeight(1, 42f);
+lsVoice.intensotyO = 0.6f;
+Check(lipSync.TryBind(lsMita, lsModSource, storyBusy: false, new[] { lsVoice }, out string bindReason)
+    && bindReason == "bound" && lipSync.HasBinding && !lipSync.Paused, "lip-sync binds valid Audio_BlendShapeVoice");
+Check(lsVoice.audioVoice == lsModSource && lsVoice.enabled, "lip-sync swaps audioVoice to mod source and enables component when voice language was off");
+Check(lsVoice.mesh.GetBlendShapeWeight(1) == 0f && lsVoice.intensotyO == 0f, "lip-sync clears residual mouth state on bind");
+
+// Simulate speaking frames with Time.timeScale == 1
+lsVoice.SimulateNativeFrame(0.3f);
+lsVoice.SimulateNativeFrame(0.3f);
+Check(lsVoice.mesh.GetBlendShapeWeight(1) > 0f && lsVoice.intensotyO > 0f && lsVoice.timeOffInSpeak > 0f,
+    "native LateUpdate opens mouth while mod audio plays");
+
+// Verify that when Time.timeScale == 0 (Escape pause), native deltaTime-driven update alone leaves mouth open (and lerps toward peak)
+Time.timeScale = 0f;
+lsModSource.isPlaying = false;
+float openBeforePause = lsVoice.mesh.GetBlendShapeWeight(1);
+lsVoice.SimulateNativeFrame(0f);
+Check(lsVoice.mesh.GetBlendShapeWeight(1) >= openBeforePause && lsVoice.mesh.GetBlendShapeWeight(1) > 0f && lsVoice.intensotyO > 0f,
+    "native deltaTime-driven mouth remains open at Time.timeScale == 0 without explicit helper closure");
+
+// Now run VoiceLipSync.Tick during Time.timeScale == 0 pause and verify explicit mouth closure
+lipSync.Tick(shouldPause: true, storyBusy: false);
+Check(lipSync.HasBinding && lipSync.Paused
+    && lsVoice.mesh.GetBlendShapeWeight(1) == 0f && lsVoice.intensotyO == 0f
+    && lsVoice.timeOffInSpeak == 0f && lsVoice.intensityOff == 0f,
+    "lip-sync explicitly closes mouth and zeroes envelope when paused at Time.timeScale == 0");
+lsVoice.SimulateNativeFrame(0f);
+Check(lsVoice.mesh.GetBlendShapeWeight(1) == 0f && lsVoice.intensotyO == 0f,
+    "mouth remains closed across subsequent native LateUpdate frames while Time.timeScale == 0");
+
+// Verify Time.timeScale == 0 alone also triggers explicit pause closure even if shouldPause was false
+lsVoice.mesh.SetBlendShapeWeight(1, 35f);
+lsVoice.intensotyO = 0.5f;
+lipSync.Tick(shouldPause: false, storyBusy: false);
+Check(lipSync.Paused && lsVoice.mesh.GetBlendShapeWeight(1) == 0f && lsVoice.intensotyO == 0f,
+    "zero Time.timeScale alone forces mouth closed");
+
+// Resume from pause
+Time.timeScale = 1f;
+lsModSource.isPlaying = true;
+lipSync.Tick(shouldPause: false, storyBusy: false);
+Check(lipSync.HasBinding && !lipSync.Paused, "lip-sync resumes when unpaused and Time.timeScale > 0");
+lsVoice.SimulateNativeFrame(0.3f);
+Check(lsVoice.mesh.GetBlendShapeWeight(1) > 0f && lsVoice.intensotyO > 0f, "mouth resumes moving after unpause");
+
+// Release restores original audioVoice and original disabled state, and closes mouth
+lipSync.Release("completed");
+Check(!lipSync.HasBinding && lsVoice.audioVoice == lsNativeSource && !lsVoice.enabled
+    && lsVoice.mesh.GetBlendShapeWeight(1) == 0f && lsVoice.intensotyO == 0f,
+    "release closes mouth and restores original audioVoice and disabled state");
+
+// Second release is a no-op and never overwrites subsequent native state
+var laterNativeSource = new AudioSource();
+lsVoice.audioVoice = laterNativeSource;
+lsVoice.enabled = true;
+lsVoice.mesh.SetBlendShapeWeight(1, 55f);
+lipSync.Release("duplicate");
+Check(lsVoice.audioVoice == laterNativeSource && lsVoice.enabled && lsVoice.mesh.GetBlendShapeWeight(1) == 55f,
+    "duplicate release leaves later native state untouched");
+
+// Preserve story ownership: refuse when storyBusy or native voice is already playing
+var (busyMita, busyVoice, busyNative, busyMod) = CreateLipSyncFixture();
+Check(!lipSync.TryBind(busyMita, busyMod, storyBusy: true, new[] { busyVoice }, out string busyReason)
+    && busyReason == "story-busy" && busyVoice.audioVoice == busyNative, "storyBusy refuses lip-sync bind");
+busyNative.isPlaying = true;
+Check(!lipSync.TryBind(busyMita, busyMod, storyBusy: false, new[] { busyVoice }, out string playingReason)
+    && playingReason == "native-voice-playing" && busyVoice.audioVoice == busyNative, "active native voice refuses lip-sync bind");
+busyNative.isPlaying = false;
+
+// External takeover mid-turn (e.g. AudioDialogue.SetAudioVoice reassigning audioVoice) is preserved on Tick and Release
+Check(lipSync.TryBind(busyMita, busyMod, storyBusy: false, new[] { busyVoice }, out _), "bind succeeds when free");
+busyVoice.SimulateNativeFrame(0.3f);
+var takeoverSource = new AudioSource { isPlaying = true };
+busyVoice.audioVoice = takeoverSource;
+busyVoice.mesh!.SetBlendShapeWeight(1, 77f);
+lipSync.Tick(shouldPause: false, storyBusy: false);
+Check(!lipSync.HasBinding && lipSync.Status == "released-external-owner"
+    && busyVoice.audioVoice == takeoverSource && busyVoice.enabled && busyVoice.mesh.GetBlendShapeWeight(1) == 77f,
+    "external audioVoice takeover releases binding without overwriting native source or mouth weight");
+
+// Native source starting playback mid-turn releases immediately and hands back audioVoice without closing native mouth
+busyVoice.audioVoice = busyNative;
+Check(lipSync.TryBind(busyMita, busyMod, storyBusy: false, new[] { busyVoice }, out _), "rebind succeeds");
+busyVoice.mesh.SetBlendShapeWeight(1, 64f);
+busyNative.isPlaying = true;
+lipSync.Tick(shouldPause: false, storyBusy: false);
+Check(!lipSync.HasBinding && lipSync.Status == "native-voice-started"
+    && busyVoice.audioVoice == busyNative && busyVoice.mesh.GetBlendShapeWeight(1) == 64f,
+    "native voice starting playback mid-turn reclaims audioVoice without zeroing native mouth");
+busyNative.isPlaying = false;
+
+// StoryBusy mid-turn releases and restores original native source
+Check(lipSync.TryBind(busyMita, busyMod, storyBusy: false, new[] { busyVoice }, out _), "rebind before story takeover");
+busyVoice.SimulateNativeFrame(0.3f);
+lipSync.Tick(shouldPause: false, storyBusy: true);
+Check(!lipSync.HasBinding && lipSync.Status == "story-busy"
+    && busyVoice.audioVoice == busyNative && busyVoice.mesh.GetBlendShapeWeight(1) == 0f,
+    "storyBusy during Tick releases lip-sync and restores native source");
+
+// Destroyed/unloaded original native source disables component on release to prevent LateUpdate null dereference
+var (unloadMita, unloadVoice, unloadNative, unloadMod) = CreateLipSyncFixture(initiallyEnabled: true);
+Check(lipSync.TryBind(unloadMita, unloadMod, storyBusy: false, new[] { unloadVoice }, out _), "bind before native source unload");
+unloadNative.gameObject.scene.isLoaded = false;
+lipSync.Release("scene-unload");
+Check(!unloadVoice.enabled && unloadVoice.audioVoice == null,
+    "unloaded native audio source disables Audio_BlendShapeVoice before clearing audioVoice");
+
+// Validation & incompatible component checks (all leave normal audio untouched)
+var (valMita, valVoice, _, valMod) = CreateLipSyncFixture();
+Check(!lipSync.TryBind(valMita, valMod, false, Array.Empty<Audio_BlendShapeVoice?>(), out string missingReason)
+    && missingReason == "component-missing", "missing component leaves lip-sync unbound cleanly");
+valVoice.shapeO = 2; // Index 2 is "Smile", not nameShapeO ("O") -> catches uninitialized default shapeO == 0 mismatch
+Check(!lipSync.TryBind(valMita, valMod, false, new[] { valVoice }, out string mismatchReason)
+    && mismatchReason == "shape-o-unverified", "unverified shapeO name mismatch rejected without calling Start");
+valVoice.shapeO = 99;
+Check(!lipSync.TryBind(valMita, valMod, false, new[] { valVoice }, out string rangeReason)
+    && rangeReason == "shape-o-unverified", "out-of-range shapeO rejected");
+valVoice.shapeO = 1;
+valVoice.animationMouth = null;
+Check(!lipSync.TryBind(valMita, valMod, false, new[] { valVoice }, out string curveReason)
+    && curveReason == "mouth-curve-null", "null animationMouth rejected");
+valVoice.animationMouth = new AnimationCurve();
+valVoice.animationOffInSpeak = null;
+Check(!lipSync.TryBind(valMita, valMod, false, new[] { valVoice }, out string offCurveReason)
+    && offCurveReason == "suppressed-curve-null", "null animationOffInSpeak with non-empty shapesOffInSpeak rejected");
+valVoice.animationOffInSpeak = new AnimationCurve();
+
+// Candidate prioritization prefers target.meshHead over other child candidates
+var (_, headPreferredVoice, _, _) = CreateLipSyncFixture();
+var otherRenderer = new SkinnedMeshRenderer { sharedMesh = new Mesh("O", "Smile") };
+var secondaryVoice = new Audio_BlendShapeVoice
+{
+    audioVoice = new AudioSource(),
+    mesh = otherRenderer,
+    nameShapeO = "O",
+    shapeO = 0,
+    shapesOffInSpeak = Array.Empty<Audio_BlendShapeVoice_Intensity>()
+};
+headPreferredVoice.mesh = valMita.meshHead;
+Check(lipSync.TryBind(valMita, valMod, false, new[] { secondaryVoice, headPreferredVoice }, out _)
+    && headPreferredVoice.audioVoice == valMod && secondaryVoice.audioVoice != valMod,
+    "candidate on target.meshHead is preferred over secondary child candidate");
+lipSync.Release();
+
+// A replacement head mesh may use the old mouth index for a different expression.
+var (swapMita, swapVoice, swapNative, swapMod) = CreateLipSyncFixture();
+Check(lipSync.TryBind(swapMita, swapMod, false, new[] { swapVoice }, out _), "bind before head mesh replacement");
+swapVoice.mesh!.sharedMesh = new Mesh("O", "Blink", "Smile");
+swapVoice.shapeO = 0;
+swapVoice.mesh.SetBlendShapeWeight(1, 73f);
+lipSync.Tick(false);
+Check(!lipSync.HasBinding && lipSync.Status == "mesh-changed"
+    && swapVoice.audioVoice == swapNative && swapVoice.mesh.GetBlendShapeWeight(1) == 73f,
+    "mesh replacement releases source without resetting a different expression at the old mouth index");
+
+void RunFakeVoiceWorker(string mode)
+{
+    if (mode == "fatal")
+    {
+        Console.WriteLine("{\"type\":\"fatal\",\"error\":\"RuntimeError\",\"code\":\"cuda_unavailable\"}");
+        return;
+    }
+    if (mode != "hang-startup") Console.WriteLine("{\"type\":\"ready\",\"engine\":\"fake\",\"protocol\":1}");
+    string wav = Convert.ToBase64String(VoiceWave(new short[] { 1000, -1000, 500 }));
+    int received = 0;
+    while (Console.ReadLine() is { } line)
+    {
+        received++;
+        if (mode != "echo") continue;
+        using var request = System.Text.Json.JsonDocument.Parse(line);
+        string id = request.RootElement.GetProperty("id").GetString()!;
+        Console.WriteLine(request.RootElement.GetProperty("text").GetString()!.Contains("fail")
+            ? System.Text.Json.JsonSerializer.Serialize(new { type = "audio", id, ok = false, error = "RuntimeError", code = "invalid_audio" })
+            : System.Text.Json.JsonSerializer.Serialize(new { type = "audio", id, ok = true, wav, generationMs = received }));
+    }
+}
+
+Console.WriteLine($"PASS: {checks} managed composer/visibility/lease/template/turn/screen/ai/voice checks (Unity boundary stubbed). Gameplay remains a manual gate.");
+
+if (args.Length == 2 && args[0] == "--voice-smoke")
+{
+    string root = Path.GetFullPath(args[1]);
+    using var liveVoice = new LocalVoiceClient(Console.WriteLine);
+    var startupTimer = System.Diagnostics.Stopwatch.StartNew();
+    liveVoice.EnsureStarted(root);
+    if (!await liveVoice.WaitUntilReadyAsync(TimeSpan.FromSeconds(180))) throw new Exception("Voice worker not ready.");
+    Console.WriteLine($"VOICE_STARTUP_READY milliseconds={startupTimer.ElapsedMilliseconds}");
+    var invalidVoice = await liveVoice.SynthesizeAsync("English is text-only in this prototype.", CancellationToken.None);
+    if (invalidVoice.Audio != null || !liveVoice.IsReady) throw new Exception("Rejected request broke worker readiness.");
+    Console.WriteLine("VOICE_REJECTION_OK worker-still-ready=True");
+    for (int repeat = 1; repeat <= 2; repeat++)
+    {
+        var result = await liveVoice.SynthesizeAsync("Подожд+и, я чт+о-то сл+ышала. Ты т+оже?", CancellationToken.None);
+        if (result.Audio == null) throw new Exception("Voice smoke failed: " + result.Error);
+        string path = Path.Combine(root, "local", "voice", "integration-smoke", $"f5-russian-worker-{repeat:00}.wav");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllBytes(path, result.Audio.WaveBytes);
+        Console.WriteLine($"VOICE_SMOKE_OK repeat={repeat} generationMs={result.GenerationMs} seconds={result.Audio.Seconds:F3} file={path}");
+    }
+    using var cancelVoice = new CancellationTokenSource();
+    var cancelledVoice = liveVoice.SynthesizeAsync("Привет!", cancelVoice.Token);
+    cancelVoice.Cancel();
+    if ((await cancelledVoice).Audio != null || liveVoice.IsReady) throw new Exception("Cancelled synthesis retained worker ownership.");
+    Console.WriteLine("VOICE_CANCELLATION_OK audio-discarded=True worker-stopped=True");
+}

@@ -16,6 +16,7 @@ local/
 *.cfg
 *.ini
 *.env
+.env.*
 *.key
 *.secret
 local.mitaai.probe.cfg

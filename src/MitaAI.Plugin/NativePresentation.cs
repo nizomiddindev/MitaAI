@@ -30,6 +30,8 @@ internal sealed class NativePresentation
     private float subtitleAlpha;
     private bool awaitingReply;
     private float awaitingExpires;
+    private bool showingPlayer;
+    internal bool VoiceHolding { get; set; }
     private Sprite? roundedSprite;
     private Texture2D? roundedTexture;
     private Sprite? roundedBorderSprite;
@@ -37,6 +39,7 @@ internal sealed class NativePresentation
 
     internal bool HasUi => ui != null;
     internal bool HasActiveTurn => playback.Active || turn.Pending || awaitingReply;
+    internal bool MitaReplyVisible => playback.Active && !showingPlayer;
     internal bool IsPaused => (controller != null && controller.isPaused) || !Application.isFocused || Time.timeScale <= 0;
     internal Font? NativeFont => draft != null && draft.font != null ? draft.font : subtitle != null ? subtitle.font : null;
 
@@ -71,7 +74,7 @@ internal sealed class NativePresentation
             {
                 if (turn.TryTake(Time.unscaledTime, true, out string line, out float duration))
                     ShowScreenLine(line, duration, false);
-                else if (playback.Finished(Time.unscaledTime))
+                else if (playback.Finished(Time.unscaledTime) && !VoiceHolding)
                 {
                     if (awaitingReply)
                     {
@@ -167,11 +170,12 @@ internal sealed class NativePresentation
 
     private void ShowScreenLine(string line, float duration, bool player)
     {
+        showingPlayer = player;
         playback.Begin(line, Time.unscaledTime, duration);
         ApplySubtitleStyle(subtitle!, player ? new Color(1, 0.6f, 0) : Color.white,
             player ? Color.white : new Color(1, 0.35f, 0.75f));
         subtitle!.text = "";
-        Plugin.Logger.LogInfo($"MITAAI_SCREEN_SUBTITLE_STARTED role={(player ? "Player" : "Mita")} characters={line.Length} mode={(player ? "player-echo" : "fixed-fixture")} anchor=bottom-center assets=game-font-effects animation=mod-typewriter questDriver=False");
+        Plugin.Logger.LogInfo($"MITAAI_SCREEN_SUBTITLE_STARTED role={(player ? "Player" : "Mita")} characters={line.Length} mode={(player ? "player-echo" : "mod-screen-text")} anchor=bottom-center assets=game-font-effects animation=mod-typewriter questDriver=False");
     }
 
     private void Discover()
@@ -455,6 +459,7 @@ internal sealed class NativePresentation
 
     internal void ClearReply()
     {
+        VoiceHolding = false;
         playback.Clear();
         subtitleAlpha = 0;
         if (subtitlePanel != null) subtitlePanel.gameObject.SetActive(false);

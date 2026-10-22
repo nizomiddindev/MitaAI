@@ -1,6 +1,12 @@
 # MitaAI Implementation Model
 
+Latest preparation, 22 October: test build 0.6.2 is installed with backup, combining reviewed worker reliability corrections, native mouth binding, and explicit scene/room diagnostic capture. No game launch or new runtime acceptance yet. Room context is not fed to the AI; production voice remains 32 steps. See reports/integration-0.6.2.md and latest HANDOFF. This supersedes older integration-status notes below.
+
+Latest gate, 21 October: v0.6.1 Russian speech is audibly confirmed, including user-tested history/game pause-resume and repeat interaction. An isolated 32/24/16-step comparison now has 18 verified samples; lower-step quality choice and production deployment are pending. Current production remains 32. No new context/memory/actions or echo fix implemented. See reports/voice-step-comparison-2026-10-21.md and latest HANDOFF for evidence superseding historical pending notes below.
+
 Research date: 5-6 October 2026. Target: `D:\MitaAI\MiSide_Dev`.
+
+Latest integration note: user authorized a first working speech prototype and explicitly stopped NeuroMita work. v0.6.0 is built/deployed: existing 32-step Russian F5 runs in a separate prewarmed owned stdio worker; Unity plays validated PCM using a mod-owned AudioSource. Text fallback and request/scene/target ownership remain enforced, no UI redesign or new downloads. 301 managed/36 Python checks and real worker synthesis/cancellation pass. Audible game acceptance remains pending; English speech, streaming, word/lip sync and spatial audio are not implemented. This supersedes earlier standalone-only/integration-unapproved notes below. Details: `reports/voice-integration-0.6.0.md`.
 
 Current voice update (9 October): the bounded coexistence test completed on 8 October with two successful overlapping local AI requests and GPU TTS while MiSide remained running. Warm voice latency was 6.09 seconds with LLM resident idle and 7.93-7.97 seconds during active requests; sampled aggregate RTX peak 4468 MiB. Audio hashes match prior auditions and 28 focused checks pass. Game FPS was not measured; smoothness feedback, acceptable full-turn latency and integration approval remain pending. TTS is not integrated. This supersedes the concurrent-testing-pending statement in the earlier note below. Evidence: `reports/voice-coexistence-2026-10-08.md`.
 

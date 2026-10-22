@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement;
 
 namespace MitaAI.Plugin;
 
-[BepInPlugin("local.mitaai.probe", "MitaAI Test Plugin", "0.5.2")]
+[BepInPlugin("local.mitaai.probe", "MitaAI Test Plugin", "0.6.2")]
 public sealed class Plugin : BasePlugin
 {
     internal static ManualLogSource Logger = null!;
@@ -20,6 +20,10 @@ public sealed class Plugin : BasePlugin
     internal static ConfigEntry<string> TestLine = null!;
     internal static ConfigEntry<float> Duration = null!;
     internal static ConfigEntry<float> InteractionRange = null!;
+    internal static ConfigEntry<bool> VoiceEnabled = null!;
+    internal static ConfigEntry<string> VoiceProjectDirectory = null!;
+    internal static ConfigEntry<float> VoiceVolume = null!;
+    internal static ConfigEntry<bool> ContextCaptureEnabled = null!;
 
     // AI Configuration
     internal static ConfigEntry<AIProvider> AIProviderSetting = null!;
@@ -39,6 +43,11 @@ public sealed class Plugin : BasePlugin
         InteractionRange = Config.Bind("Interaction", "Range", 2f, "Maximum camera-to-model-center distance in Unity units (0.8-3).");
         TestLine = Config.Bind("Test", "Line", "Hello! I'm right here.", "Fixed diagnostic reply; used when AI Provider is set to Fixture.");
         Duration = Config.Bind("Test", "DurationSeconds", 8f, "Caption duration in seconds (2-30).");
+        VoiceEnabled = Config.Bind("Voice", "Enabled", true, "Enable the existing local GPU F5 Russian voice. Other languages remain text-only.");
+        VoiceProjectDirectory = Config.Bind("Voice", "ProjectDirectory", Path.GetFullPath(Path.Combine(Paths.GameRootPath, "..")), "MitaAI project containing tools/voice-evaluation and local/voice. No automatic downloads.");
+        VoiceVolume = Config.Bind("Voice", "Volume", 0.8f, "MitaAI speech volume (0-1). Existing game audio is unchanged.");
+        ContextCaptureEnabled = Config.Bind("Diagnostics", "ContextCaptureEnabled", true,
+            "Test-build room diagnostics: log scene/room on conversation open or Ctrl+F9 outside input/history. No AI context injection.");
 
         AIProviderSetting = Config.Bind("AI", "Provider", AIProvider.Groq, "AI provider to use: Groq, Gemini, OpenRouter, LMStudio, Ollama, Custom, Fixture.");
         AIEndpointUrl = Config.Bind("AI", "EndpointUrl", "", "Custom API endpoint URL. Leave empty to use provider default.");
@@ -50,7 +59,7 @@ public sealed class Plugin : BasePlugin
         AITimeoutSeconds = Config.Bind("AI", "TimeoutSeconds", 25f, "Timeout in seconds for AI requests (3-120).");
 
         AddComponent<MitaAITestBehaviour>();
-        Log.LogInfo($"MITAAI_PLUGIN_LOADED version=0.5.2 mode=ai-chat provider={AIProviderSetting.Value} interaction=nearby-aimed ui=screen-subtitle questDriver=False");
+        Log.LogInfo($"MITAAI_PLUGIN_LOADED version=0.6.2 mode=ai-chat provider={AIProviderSetting.Value} interaction=nearby-aimed ui=screen-subtitle voice={VoiceEnabled.Value} contextDiagnostics={ContextCaptureEnabled.Value} questDriver=False");
     }
 }
 
@@ -63,6 +72,14 @@ public sealed class MitaAITestBehaviour : MonoBehaviour
     private readonly NativePresentation native = new();
     private readonly AIChatClient aiClient = new();
     private readonly ConcurrentQueue<AIResponseEnvelope> aiResponses = new();
+    private readonly LocalVoiceClient voiceClient = new(message => Plugin.Logger.LogInfo(message));
+    private readonly VoicePlayback voicePlayback = new();
+    private GameContextCollector? contextCollector;
+    private bool voiceUploadChecked;
+    private readonly ConcurrentQueue<VoiceResponseEnvelope> voiceResponses = new();
+    private CancellationTokenSource? activeVoiceCts;
+    private VoiceStamp? voiceStamp;
+    private VoiceAudio? waitingAudio;
     private long currentRequestId;
     private CancellationTokenSource? activeRequestCts;
     private MitaPerson? target;
@@ -103,6 +120,7 @@ public sealed class MitaAITestBehaviour : MonoBehaviour
 
     private sealed record TargetMatch(MitaPerson Mita, Transform Anchor, Renderer Renderer, bool Head, Camera Camera);
     private sealed record AIResponseEnvelope(long RequestId, string SceneStamp, int TargetId, string UserMessage, AIChatResult Result);
+    private sealed record VoiceResponseEnvelope(VoiceStamp Stamp, VoiceResult Result);
 
     public void Update()
     {
@@ -113,6 +131,24 @@ public sealed class MitaAITestBehaviour : MonoBehaviour
             {
                 started = true;
                 Plugin.Logger.LogInfo("MITAAI_MAIN_THREAD_READY");
+            }
+            if (Plugin.VoiceEnabled.Value) voiceClient.EnsureStarted(Plugin.VoiceProjectDirectory.Value);
+            else { CancelVoice(); voiceClient.Stop(); }
+            if (Plugin.VoiceEnabled.Value && !voiceUploadChecked)
+            {
+                voiceUploadChecked = true;
+                try
+                {
+                    voicePlayback.VerifyUpload();
+                    Plugin.Logger.LogInfo("MITAAI_VOICE_UPLOAD_CHECK passed=True audible=False");
+                }
+                catch (Exception error)
+                {
+                    object details = error is System.Runtime.CompilerServices.RuntimeWrappedException wrapped
+                        ? wrapped.WrappedException : error;
+                    Plugin.Logger.LogWarning($"MITAAI_VOICE_UPLOAD_CHECK passed=False stage={voicePlayback.Stage} error={details}");
+                    voicePlayback.Dispose();
+                }
             }
             string current = SceneManager.GetActiveScene().handle.ToString();
             if (current != sceneStamp)
@@ -167,6 +203,7 @@ public sealed class MitaAITestBehaviour : MonoBehaviour
                 {
                     aiClient.AddTurn("user", envelope.UserMessage);
                     aiClient.AddTurn("assistant", aiResult.Content);
+                    BeginVoice(aiResult.Content);
                 }
                 else
                 {
@@ -196,9 +233,13 @@ public sealed class MitaAITestBehaviour : MonoBehaviour
             promptOpacity = Mathf.MoveTowards(promptOpacity, !composer.IsOpen && !historyOpen && !native.HasActiveTurn && promptMatch != null ? 1 : 0,
                 Time.unscaledDeltaTime / 0.16f);
             native.Tick(composer.IsOpen, composer.DisplayWindow(), Ease(promptOpacity), Plugin.TestKey.Value.ToString(), historyOpen);
+            TickVoice();
             if (composer.IsOpen) ReadKeyboard();
             else
             {
+                if (Plugin.ContextCaptureEnabled.Value && Input.GetKeyDown(KeyCode.F9)
+                    && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)))
+                    CaptureContext("ctrl-f9");
                 if (Input.GetKeyDown(Plugin.HistoryKey.Value)) ToggleHistory();
                 else if (historyOpen && Input.GetKeyDown(KeyCode.Escape)) CloseHistory();
                 else if (!historyOpen && promptMatch != null && Input.GetKeyDown(Plugin.TestKey.Value)) RequestInteraction("legacy");
@@ -215,8 +256,7 @@ public sealed class MitaAITestBehaviour : MonoBehaviour
         }
         catch (Exception exception)
         {
-            failed = true;
-            ResetBinding();
+            DisableAfterFailure();
             Plugin.Logger.LogError($"MITAAI_PROBE_FAILED {exception}");
         }
     }
@@ -228,8 +268,13 @@ public sealed class MitaAITestBehaviour : MonoBehaviour
         {
             if (native.StoryBusy)
             {
+                CancelVoice();
                 native.Hide();
                 if (historyOpen) CloseHistory();
+            }
+            else
+            {
+                voicePlayback.LateTick(native.IsPaused || historyOpen, native.StoryBusy);
             }
             if (historyOpen)
             {
@@ -252,8 +297,7 @@ public sealed class MitaAITestBehaviour : MonoBehaviour
         }
         catch (Exception exception)
         {
-            ResetBinding();
-            failed = true;
+            DisableAfterFailure();
             Plugin.Logger.LogError($"MITAAI_INPUT_UPDATE_FAILED {exception}");
         }
     }
@@ -383,6 +427,23 @@ public sealed class MitaAITestBehaviour : MonoBehaviour
         composerOpenedAt = Time.unscaledTime;
         promptMatch = null;
         Plugin.Logger.LogInfo($"MITAAI_INPUT_OPENED mitaId={target!.GetInstanceID()} playerId={chosenPlayer.GetInstanceID()}");
+        CaptureContext("conversation-open");
+    }
+
+    private void CaptureContext(string trigger)
+    {
+        if (!Plugin.ContextCaptureEnabled.Value) return;
+        try
+        {
+            // Called only from Update/OpenComposer; capture the owner thread here, not in a field initializer.
+            contextCollector ??= new GameContextCollector();
+            var snapshot = contextCollector.Capture();
+            Plugin.Logger.LogInfo(snapshot.ToLogLine() + $" trigger={trigger} capturedAt={snapshot.CapturedAt.ToString("F3", CultureInfo.InvariantCulture)}");
+        }
+        catch (Exception error)
+        {
+            Plugin.Logger.LogWarning("MITAAI_CONTEXT_FAILED error=" + error.GetType().Name);
+        }
     }
 
     private void SubmitMessage()
@@ -400,6 +461,7 @@ public sealed class MitaAITestBehaviour : MonoBehaviour
             return;
         }
         CloseComposer("submitted");
+        CancelActiveAiRequest();
         Plugin.Logger.LogInfo($"MITAAI_INPUT_SUBMITTED characters={message.Length} provider={Plugin.AIProviderSetting.Value}");
 
         float timeout = Mathf.Clamp(Plugin.AITimeoutSeconds.Value, 3f, 120f);
@@ -418,11 +480,11 @@ public sealed class MitaAITestBehaviour : MonoBehaviour
             {
                 aiClient.AddTurn("user", message);
                 aiClient.AddTurn("assistant", line);
+                BeginVoice(line);
             }
             return;
         }
 
-        currentRequestId++;
         long thisRequestId = currentRequestId;
         string thisScene = sceneStamp;
         int thisTargetId = target != null ? target.GetInstanceID() : 0;
@@ -686,6 +748,7 @@ public sealed class MitaAITestBehaviour : MonoBehaviour
 
     private void ResetBinding(bool restoreCursor = true)
     {
+        CancelVoice();
         CloseComposer("binding-reset", restoreCursor);
         if (historyOpen) CloseHistory();
         native.Hide();
@@ -996,6 +1059,7 @@ public sealed class MitaAITestBehaviour : MonoBehaviour
 
     private void CancelActiveAiRequest()
     {
+        CancelVoice();
         currentRequestId++;
         if (activeRequestCts != null)
         {
@@ -1005,11 +1069,120 @@ public sealed class MitaAITestBehaviour : MonoBehaviour
         }
     }
 
-    public void OnDisable() { CancelActiveAiRequest(); ResetBinding(); native.Reset(); inputLease.DiscardCursorRecovery(); }
-    public void OnDestroy() { CancelActiveAiRequest(); ResetBinding(); native.Reset(); aiClient.ResetHistory(clearSessionHistory: true); inputLease.DiscardCursorRecovery(); }
-    public void OnApplicationQuit() { CancelActiveAiRequest(); ResetBinding(); native.Reset(); aiClient.ResetHistory(clearSessionHistory: true); inputLease.DiscardCursorRecovery(); }
+    private void BeginVoice(string text)
+    {
+        CancelVoice();
+        if (!Plugin.VoiceEnabled.Value || target == null) return;
+        text = SubtitleTurnState.DisplayExcerpt(text);
+        if (!text.Any(character => character >= '\u0400' && character <= '\u04ff'))
+        {
+            Plugin.Logger.LogInfo("MITAAI_VOICE_TEXT_ONLY reason=russian-engine-language");
+            return;
+        }
+        if (!voiceClient.IsReady)
+        {
+            bool unavailable = voiceClient.State == VoiceWorkerState.Unavailable;
+            Plugin.Logger.LogInfo("MITAAI_VOICE_TEXT_ONLY reason=" + (unavailable ? "voice-unavailable" : "voice-warming"));
+            Notify(unavailable ? "Voice is unavailable (see log). This reply is text-only."
+                : "Voice is warming up. This reply is text-only.");
+            return;
+        }
+        var stamp = new VoiceStamp(currentRequestId, sceneStamp, target.GetInstanceID());
+        voiceStamp = stamp;
+        activeVoiceCts = new CancellationTokenSource();
+        var token = activeVoiceCts.Token;
+        native.VoiceHolding = true;
+        Plugin.Logger.LogInfo($"MITAAI_VOICE_REQUEST reqId={stamp.RequestId} chars={text.Length}");
+        _ = Task.Run(async () =>
+        {
+            var result = await voiceClient.SynthesizeAsync(text, token).ConfigureAwait(false);
+            voiceResponses.Enqueue(new VoiceResponseEnvelope(stamp, result));
+        });
+    }
+
+    private void TickVoice()
+    {
+        try
+        {
+            if (voiceStamp is { } current && (!current.Matches(currentRequestId, sceneStamp,
+                target != null ? target.GetInstanceID() : 0) || native.StoryBusy || !native.HasActiveTurn))
+            {
+                CancelVoice();
+                return;
+            }
+            while (voiceResponses.TryDequeue(out var response))
+            {
+                if (voiceStamp != response.Stamp || !response.Stamp.Matches(currentRequestId, sceneStamp,
+                    target != null ? target.GetInstanceID() : 0)) continue;
+                activeVoiceCts?.Dispose();
+                activeVoiceCts = null;
+                waitingAudio = response.Result.Audio;
+                if (waitingAudio == null)
+                {
+                    Plugin.Logger.LogWarning("MITAAI_VOICE_TEXT_ONLY reason=" + response.Result.Error);
+                    CancelVoice();
+                }
+                else Plugin.Logger.LogInfo($"MITAAI_VOICE_AUDIO_READY generationMs={response.Result.GenerationMs} seconds={waitingAudio.Seconds.ToString("0.00", CultureInfo.InvariantCulture)}");
+            }
+            bool paused = native.IsPaused || historyOpen;
+            if (waitingAudio != null && native.MitaReplyVisible && !paused)
+            {
+                voicePlayback.Play(waitingAudio, Plugin.VoiceVolume.Value, target, native.StoryBusy);
+                waitingAudio = null;
+                Plugin.Logger.LogInfo($"MITAAI_VOICE_PLAYING spatial=screen mono=True lipSync={voicePlayback.LipSyncStatus}");
+            }
+            voicePlayback.Tick(paused, native.StoryBusy);
+            if (voiceStamp != null && activeVoiceCts == null && waitingAudio == null && !voicePlayback.Active)
+            {
+                native.VoiceHolding = false;
+                voiceStamp = null;
+            }
+        }
+        catch (Exception error)
+        {
+            object details = error is System.Runtime.CompilerServices.RuntimeWrappedException wrapped
+                ? wrapped.WrappedException : error;
+            Plugin.Logger.LogWarning($"MITAAI_VOICE_TEXT_ONLY stage={voicePlayback.Stage} error={details}");
+            CancelVoice();
+        }
+    }
+
+    private void CancelVoice()
+    {
+        activeVoiceCts?.Cancel();
+        activeVoiceCts?.Dispose();
+        activeVoiceCts = null;
+        voiceStamp = null;
+        waitingAudio = null;
+        voiceResponses.Clear();
+        native.VoiceHolding = false;
+        voicePlayback.Stop();
+    }
+
+    private void ShutdownVoice(bool permanent = true)
+    {
+        CancelVoice();
+        if (permanent) voiceClient.Dispose();
+        else voiceClient.Stop();
+        voicePlayback.Dispose();
+    }
+
+    // Update/LateUpdate stop running after this, so the GPU worker must be released here.
+    private void DisableAfterFailure()
+    {
+        failed = true;
+        FailureCleanup.Run(message => Plugin.Logger.LogError(message),
+            ("voice-worker", () => voiceClient.Stop("plugin-failed")),
+            ("binding", () => ResetBinding()),
+            ("voice-playback", () => { CancelVoice(); voicePlayback.Dispose(); }));
+    }
+
+    public void OnDisable() { CancelActiveAiRequest(); ShutdownVoice(permanent: false); ResetBinding(); native.Reset(); inputLease.DiscardCursorRecovery(); }
+    public void OnDestroy() { CancelActiveAiRequest(); ShutdownVoice(); ResetBinding(); native.Reset(); aiClient.ResetHistory(clearSessionHistory: true); inputLease.DiscardCursorRecovery(); }
+    public void OnApplicationQuit() { CancelActiveAiRequest(); ShutdownVoice(); ResetBinding(); native.Reset(); aiClient.ResetHistory(clearSessionHistory: true); inputLease.DiscardCursorRecovery(); }
     public void OnApplicationFocus(bool focused)
     {
+        if (!focused) voicePlayback.Tick(true, native.StoryBusy);
         if (!focused && composer.IsOpen)
         {
             CloseComposer("focus-lost", restoreCursor: false, deferCursorRecovery: true);

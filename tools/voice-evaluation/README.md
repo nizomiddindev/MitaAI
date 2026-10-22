@@ -1,5 +1,11 @@
 # Standalone Voice Evaluation
 
+## Current Integration Prototype
+
+User subsequently authorized MitaAI integration and stopped NeuroMita troubleshooting. Plugin v0.6.0 starts `voice_worker.py` with the existing `.venv-f5-gpu` environment, prewarms offline F5 Russian, then exchanges request-ID-tagged JSON/WAV through owned stdin/stdout. It does not download anything or expose a network server. New voice caches/temp remain inside this D: lab. Plugin text/UI is preserved; audio uses a separate mod-owned AudioSource with lifecycle cancellation and pause support. English remains text-only for now.
+
+The original audition scripts below remain standalone. `voice_worker.py` is now the integration entry point, not an installer or an audition CLI. 28 existing offline checks plus 8 checks in `test_voice_worker.py` pass. Real C# client smoke verifies engine reuse, 3.195/3.193-second warm generations, rejection and cancellation; startup including warm-up 25.552 seconds. In-game audible speech/controls regression verification remains pending. See `reports/voice-integration-0.6.0.md`. The earlier notes below describe prior evaluation stages, not current integration authorization.
+
 Standalone evaluation only. This does not change the MiSide plugin, launcher, settings, saves, subtitles, or installed DLL. The user rejected the sampled Kokoro voices; do not integrate Kokoro as an accepted voice.
 
 ## Latest Coexistence Result (8 October; Verified 9 October)
@@ -63,6 +69,12 @@ python tools/voice-evaluation/test_english.py
 ```
 
 The second command only prints readiness. Neither command installs dependencies, downloads weights, loads a model or touches game files. The offline checks can run on the existing Python 3.14; the engine environment should use Python 3.11 to align with upstream's tested environment.
+
+## Step Comparison (21 October)
+
+Longer follow-up: `--case-set long` generates three original plain-Russian lines, each about 11 s audio. Completed outputs in local/voice/step-comparison-long-2026-10-21; timings and verification in the same step report. 41 Python checks pass. Longer-line user listening pending, production remains 32 steps. Use a fresh output folder for any intentional regeneration; saved audio is already available for replay.
+
+Isolated 32/24/16-step comparison is complete; lower-step listening approval remains pending. Production worker still uses 32 steps. New benchmark_f5_steps.py loads one existing engine, warms each setting, rotates two repetitions of three cases, and records labelled WAVs/timings/hashes in a fresh voice-lab folder. No download or game/config changes. Results: local/voice/step-comparison-2026-10-21/results.json; report: reports/voice-step-comparison-2026-10-21.md. 28 preflight and 12 worker/comparison checks pass. Do not rerun to replay files or infer audible quality from those checks.
 
 ## Next Agent: Local Test Procedure
 
