@@ -87,5 +87,7 @@ Executed from `D:\MitaAI\local\worktrees\antigravity` on branch `codex/antigravi
 
 ## Remaining Limitations
 
+- **Codex integration review (22 October)**: reviewed original commit 3979942 and cherry-picked it onto main as 66119cf. Independently verified 98 checks in the worker checkout, then the integrated Release plugin build (zero warnings/errors), 98 context checks and 358 input/voice checks. No deployment, prompt connection, game/model launch or push.
+- **Serialization is not model instruction isolation**: parse/round-trip tests establish that raw strings cannot add JSON properties or escape their string fields. They do not establish that an LLM will disregard instruction-like content within those strings. The dataOnly flag is descriptive metadata; future prompt integration needs to preserve the distinction between trusted instructions and observed data. The size limit is a UTF-16 character bound, not a byte or token budget.
 - **Not connected to AI prompt**: `GameContextPromptFormatter` is an offline helper and is not called by `AIChatClient.cs` or `Plugin.cs`. Prompt integration should wait until the room-walking runtime diagnostic gate in `0.6.2` confirms actual `Location34_Communication.roomPlayer` availability and values in-game.
 - **Scope of observations**: Only active scene (`chapterScene`) and `Location34_Communication.roomPlayer` (`playerRoom`) are represented; Peaceful Mode (`Location21_Communication`), `AudioRoom_Room`, Mita's own location/activity/identity, and quest state remain unobserved.

@@ -1,5 +1,11 @@
 # MitaAI Handoff
 
+## Offline Context Formatter Integrated (22 October, Source Only)
+
+- Reviewed Antigravity commit 3979942cc48b3014c24eb0b07002cb5cc6bcfb57 and cherry-picked it as 66119cf on main. Changes limited to GameContextPromptFormatter.cs, the separate context test project and task report. Revalidates raw values/source counts, preserves scene/room separation and explicit unobserved fields, emits deterministic JSON bounded to 832 UTF-16 code units under current schema/validation. Handwritten JSON escaping is covered by parse/round-trip tests; no AI calls or Unity collection in the formatter.
+- Independently ran 98 context/formatter checks in the worker checkout, then verified main's plugin Release build (zero warnings/errors), 98 context checks and 358 existing managed checks after integration. No defect requiring changes identified in current offline scope. These are syntactic/data-handling tests, not evidence an LLM will resist instructions embedded inside a raw value; dataOnly is metadata, not an enforced security boundary.
+- No prompt wiring, game/model launch, deployment, version bump or push. Installed 0.6.2 DLL remains unchanged; main's newly built DLL now includes the unused formatter and must not be confused with the installed hash recorded below. Room/controller availability and raw values still require the previously planned game gate. Report: reports/game-context-formatter.md. Antigravity's assignment is complete; no new task dispatched.
+
 ## Parallel Worktree Setup Complete (22 October)
 
 - Source checkpoint eaf6a40 contains the current 0.6.2 code, reports, tests and existing launcher net9 retarget/published outputs. Staged path checks exclude game/models/caches/private config, a common credential-pattern scan found no hits, and .env.* is now ignored. No push performed.
