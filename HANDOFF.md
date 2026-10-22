@@ -1,8 +1,11 @@
 # MitaAI Handoff
 
-## Parallel Worktree Setup In Progress (22 October)
+## Parallel Worktree Setup Complete (22 October)
 
-- User approved a source checkpoint and isolated Claude/Antigravity checkouts. Added .env.* exclusion and docs/parallel-development.md with ownership, shared build-reference commands, per-task reports/commits, sequential cherry-pick integration, and no shared game/voice execution by worker agents. Actual creation/build verification will be recorded after completion. No new external task dispatched; user must point each external app at its assigned folder before resuming edits.
+- Source checkpoint eaf6a40 contains the current 0.6.2 code, reports, tests and existing launcher net9 retarget/published outputs. Staged path checks exclude game/models/caches/private config, a common credential-pattern scan found no hits, and .env.* is now ignored. No push performed.
+- Created native Git worktrees D:\MitaAI\local\worktrees\claude-code on codex/claude-work and D:\MitaAI\local\worktrees\antigravity on codex/antigravity-work. Codex remains in D:\MitaAI on main. No game/model/venv copies or junctions. Each source checkout plus local build outputs measured about 2.47 MiB at setup.
+- Independently built plugin from BOTH worktrees using -p:GameDirectory=D:\MitaAI\MiSide_Dev: zero warnings/errors in each. Each worktree passed 358 input/voice + 39 context checks with net9.0 override. Their separate bin/obj outputs and clean git status confirm isolated build setup. No model loading, game launch or deployment for this workflow task.
+- Ownership/build/delivery rules are in docs/parallel-development.md and AGENTS.md. Worker agents use only their assigned checkout and branch, avoid shared game/voice execution and shared HANDOFF edits, and return explicit task commits for Codex review/cherry-pick. No new external task dispatched. IMPORTANT: user must open each new folder in its external application; existing sessions pointed at D:\MitaAI do not move automatically. Final setup documentation is fast-forwarded into both clean branches before use. Evidence: reports/parallel-worktree-setup-2026-10-22.md.
 
 ## Installed Test Build: 0.6.2 (22 October, Game Not Launched)
 
