@@ -1,43 +1,97 @@
 # MitaAI
 
-MitaAI is an injected MiSide mod that lets the player converse with the existing Mita inside the game using language models.
+**MitaAI** is an injected companion mod for *MiSide* that enables real-time, bidirectional conversation with Mita using modern Large Language Models (LLMs) and local GPU-accelerated voice synthesis.
 
-This workspace contains the development game, researched implementation model, the injected plugin (`v0.5.0`), and the standalone GUI launcher/configurator.
+The project combines an injected BepInEx/Il2Cpp plugin, a persistent local voice worker with mouth blend-shape lip-sync, and a standalone GUI launcher and configurator.
 
 ![In-Game Dialogue with Mita](docs/images/mitaai-ingame-dialogue.png)
 
-## Key Features
+---
 
-- **AI Connectivity**: Connects to **Groq Cloud**, **Ollama** (local), **LM Studio** (local), **OpenRouter** (cloud free models like `meta-llama/llama-3.3-70b-instruct:free`), and custom OpenAI-compatible endpoints, plus an offline diagnostic fixture.
-- **Standalone GUI Launcher**: Run [`Launcher.bat`](Launcher.bat) or [`tools/Launcher/MitaAI.Launcher.exe`](tools/Launcher/MitaAI.Launcher.exe) to select providers, test connections in real-time with latency checks, customize Mita's personality prompt, and launch MiSide.
-- **In-Game Subtitles**: Bottom-centered screen-space subtitles using the native game font and UI effects. Player text echoes in orange with typewriter animation, followed by Mita's real AI response in white/pink.
-- **Nearby Interaction**: Aimed nearby `[E]` prompt with distance clamping and occlusion raycasting. Controls yield safely to native story dialogues, cutscenes, and menus.
+## Key Features (v0.6.2)
+
+- **AI Connectivity**: Connects to **Groq Cloud** (ultra-fast ~0.4s), **LM Studio** (local), **Ollama** (local), **OpenRouter** (cloud free models), or custom OpenAI-compatible endpoints, plus an offline diagnostic fixture.
+- **GPU Voice Synthesis (F5-TTS v2)**: Prewarmed Russian speech synthesis powered by an owned background Python worker over stdio JSON IPC. Generates natural dialogue matching Mita's voice in ~3.1–3.5s with zero per-turn CUDA re-initialization penalty and non-blocking cancellation handling.
+- **Native Speaking Animation & Lip-Sync**: Dynamically binds to MiSide's native `Audio_BlendShapeVoice` component. Mita visibly speaks in sync with generated audio while preserving story-owned animations (sitting, cooking, walking), and properly closes her mouth during pauses.
+- **In-Game Presentation & Subtitles**: Screen-space subtitles rendered using native game fonts and UI shaders. Displays player text in orange with typewriter effects, followed by Mita's AI response in white/pink.
+- **Nearby Interaction & Story Awareness**: Aimed `[E]` interaction with distance clamping and occlusion raycasting. Safely yields to native story cutscenes and scripted dialogues.
+- **Chat History & Pause Controls**: Press **`H`** to open the chat history overlay, or **`Escape`** to pause the game—both pause speech and mouth movement seamlessly and resume upon exit.
+- **Game Context Discovery**: Integrated scene and room detection (`GameContextCollector`) with deterministic offline JSON formatting (`GameContextPromptFormatter`) to prepare grounded situational awareness.
+
+---
 
 ## Launcher & Configuration
 
-The standalone GUI launcher allows you to select and configure AI providers, customize Mita's persona and dialogue constraints, test connectivity in real-time, and launch the game with one click.
+The standalone GUI launcher ([`Launcher.bat`](Launcher.bat) / `tools/Launcher/MitaAI.Launcher.exe`), built with .NET 9, allows configuring providers, tailoring Mita's persona, measuring latency, and launching the game in one place.
 
 ![MitaAI Launcher & Configurator](docs/images/mitaai-launcher-main.png)
 
 ### Persona Customization & Live Connection Testing
 
-Fine-tune dialogue constraints, system prompts, and verify response latency directly from the interface before starting the game:
+Fine-tune system prompts, dialogue limits, and test API response times directly before launching the game:
 
 ![Persona Customization and Latency Testing](docs/images/mitaai-launcher-persona-test.png)
 
+---
+
+## In-Game Controls
+
+| Key / Shortcut | Action | Description |
+|---|---|---|
+| **`E`** (Aimed) | **Talk to Mita** | Opens the dialogue composer when looking at nearby Mita. |
+| **`Enter`** | **Send Message** | Submits your message to the configured AI provider. |
+| **`H`** | **Chat History** | Opens the scrollable conversation history; pauses ongoing speech. |
+| **`Escape`** | **Pause Game** | Pauses gameplay, AI voice playback, and speaking animation. |
+| **`Ctrl + F9`** | **Context Diagnostic** | Logs a snapshot of the active scene and player room. |
+
+---
+
 ## Quick Start
 
-1. Open [`Launcher.bat`](Launcher.bat) to launch the GUI configurator.
-2. Select your provider (**Groq Cloud**, **OpenRouter**, **LM Studio**, or **Ollama**), enter your key/model, and click **⚡ Test AI Connection**.
-3. Click **💾 Save Configuration**, then click **🎮 Play MiSide**.
-4. Approach Mita in-game (e.g. `Scene 3 - WeTogether`), press **`E`**, type your message, and press **`Enter`**!
+1. **Configure AI**:
+   - Open [`Launcher.bat`](Launcher.bat) to start the configurator.
+   - Select your provider (**Groq Cloud**, **OpenRouter**, **LM Studio**, or **Ollama**), input your model/key, and click **⚡ Test AI Connection**.
+2. **Save & Launch**:
+   - Click **💾 Save Configuration**, then click **🎮 Play MiSide**.
+3. **Converse with Mita**:
+   - Approach Mita in-game (e.g. `Scene 3 - WeTogether`), aim at her, press **`E`**, enter your message, and press **`Enter`**!
 
-## Documentation & Tools
+---
 
-- [Implementation model and architecture](docs/implementation-model.md)
-- [Handoff status and verified behaviors](HANDOFF.md)
-- [Test plugin instructions and verification markers](docs/test-plugin.md)
-- [GitHub research and NeuroMita comparative analysis](docs/research-evidence.md)
-- [Standalone Launcher executable](tools/Launcher/MitaAI.Launcher.exe) (Shortcut: [`Launcher.bat`](Launcher.bat))
-- [AI Connection test script](tools/Test-AIConnection.ps1)
-- [Automated build and install script](tools/Build-InstallProbe.ps1)
+## Technical Architecture
+
+```
+┌────────────────────────────────────────────────────────┐
+│                      MiSide Game                       │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │               MitaAI.Plugin (C#)                 │  │
+│  │  - Aimed Raycast & Interactivity Gate            │  │
+│  │  - Screen-Space Native Subtitle Canvas           │  │
+│  │  - VoiceLipSync (Audio_BlendShapeVoice Binding)  │  │
+│  │  - GameContextCollector & Diagnostic Gate        │  │
+│  └──────────────────┬─────────────────┬─────────────┘  │
+└─────────────────────┼─────────────────┼────────────────┘
+                      │ stdio JSON IPC  │ HTTP REST
+                      ▼                 ▼
+        ┌───────────────────────┐  ┌─────────────────────┐
+        │  voice_worker.py (D:) │  │ LLM Endpoint        │
+        │  - PyTorch CUDA (F5)  │  │ - Groq / OpenRouter │
+        │  - Russian v2 Model   │  │ - LM Studio / Ollama│
+        └───────────────────────┘  └─────────────────────┘
+```
+
+- **Plugin Engine**: BepInEx 5 / Unity Il2Cpp interop targeting .NET Standard 2.1.
+- **Voice Runtime**: Python 3.11 with Torch/CUDA (2.6.0+cu124) running an owned F5-TTS Russian v2 worker over stdio.
+- **Launcher**: Standalone WPF application targeting Windows Desktop .NET 9.0 (`net9.0-windows`).
+- **Safety & Verification**: Tested across 381+ managed unit checks, 98 context/formatting checks, and 40+ voice worker tests.
+
+---
+
+## Documentation & References
+
+- [Implementation Model & Architecture](docs/implementation-model.md) — Comprehensive technical design and acceptance gates.
+- [Handoff & Verification Status](HANDOFF.md) — Live changelog, benchmark results, and current testing state.
+- [Parallel Development Protocol](docs/parallel-development.md) — Multi-agent worktree conventions and branch workflows.
+- [GitHub Research & Comparative Analysis](docs/research-evidence.md) — Historical research and technical comparison.
+- [Standalone Launcher Source](src/MitaAI.Launcher/) & [Executable](tools/Launcher/MitaAI.Launcher.exe)
+- [Automated Build & Probe Script](tools/Build-InstallProbe.ps1)
